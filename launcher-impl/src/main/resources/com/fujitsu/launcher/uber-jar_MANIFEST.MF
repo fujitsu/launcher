@@ -1,0 +1,3 @@
+Manifest-Version: 1.0
+Bundle-SymbolicName: org.glassfish.main.embedded.web
+Main-Class: com.fujitsu.launcher.uberjar.Launcher

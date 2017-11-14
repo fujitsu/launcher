@@ -1,0 +1,33 @@
+= Launcher
+
+Create a uber (fat) jar file or run an application.
+
+== Usage
+java -jar launcher-1.0.jar [--config-file file-path] [--http-listener port-number] [--https-listener port-number] [--contextroot context-root] [--libraries jar-filepath] --deploy war-file [--generate uber-jar]
+
+=== Options
+[options="header"]
+|===
+|Name            |Purpose |Default Value
+|--config-file   |Specify the name of configuration file (domain.xml). Do not use --http-listener and/or --https-listener when using this option. |
+|--http-listener |Specify http port number. Do not use --config-file when using this option. |8080
+|--https-listener|Specify http port number. Do not use --config-file when using this option. |8181
+|--deploy        |Specify the name of war file to deploy. This option is required. |
+|--contextroot   |Specify context-root. |/
+|--libraries     |Specify the absolute path names of jar files which are refered from the application. If you specify more than one files, use comma(,) as a separator. These files will not be included in the generated uber-jar. |
+|--generate      |Specify the path name of uber-jar to be generated. When this option is not specified, the application will run automatically. |
+|===
+
+== Example
+Run "my-app.war" application without creating a uber jar.
+[source]
+----
+$ java -jar launcher-1.0.jar --deploy my-app.war
+----
+
+Create "my-uber.jar", and then, run it. 
+[source]
+----
+$ java -jar launcher-1.0.jar --deploy my-app.war --generate my-uber.jar
+$ java -jar my-uber.jar
+----

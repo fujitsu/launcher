@@ -1,0 +1,19 @@
+= Launcher
+
+== About Launcher
+Launcher is one of MicroProfile implementations.
+Launcher 1.0 is conformed to MicroProfile 1.1 which includes CDI 1.2, JSON-P 1.0, JAX-RS 2.0 and MicroProfile Config 1.0 API.
+For the details of MicroProfile, please refer link:https://projects.eclipse.org/projects/technology.microprofile[MicroProfile].
+
+In addition that, Launcher provides the feature to create a portable uber(fat) jar.
+For the details, please refer Usage.
+
+
+== How to build
+[source]
+----
+$ mvn clean install
+----
+
+== Usage
+Please refer link:doc/Usage.adoc[].

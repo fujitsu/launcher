@@ -17,3 +17,7 @@ $ mvn clean install
 
 == Usage
 Please refer link:doc/Usage.adoc[].
+
+== Download
+A binary form can be downloaded from link:https://github.com/fujitsu/launcher/releases[].
+

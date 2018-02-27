@@ -85,6 +85,33 @@
                                         <exclude>org/apache/geronimo/config/DefaultConfigBuilder.class</exclude>
                                     </excludes>
                                 </filter>
+                                <filter>
+                                    <artifact>org.glassfish.main.extras:glassfish-embedded-web</artifact>
+                                    <excludes>
+                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$1.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$2$1.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$2.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$3.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$4.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$DelegatedInjectionResolver$1.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$DelegatedInjectionResolver.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$ExecutionContext$1.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$ExecutionContext$NameListerPair.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$ExecutionContext.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$NameCommandClassPair.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$UploadedFilesManager.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle$1.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle$2.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle$3.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle$4.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle$5.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle$DeploymentContextBuidlerImpl.class</exclude>
+                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle.class</exclude>
+                                        <exclude>org/glassfish/deployment/admin/DeployCommand.class</exclude>
+                                        <exclude>org/glassfish/deployment/admin/DeployCommand$Interceptor.class</exclude>
+                                    </excludes>
+                                </filter>
                             </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">

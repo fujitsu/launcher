@@ -37,6 +37,12 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+/*
+ * Portions Copyright 2017-2018 Fujitsu Limited.
+ * 
+ * Fujitsu elects to include this software in this distribution under the CDDL
+ * license.
+ */
 package com.sun.enterprise.v3.admin;
 
 import com.sun.enterprise.admin.event.AdminCommandEventBrokerImpl;
@@ -578,6 +584,9 @@ public class CommandRunnerImpl implements CommandRunner {
             report.setMessage(e.toString());
             report.setActionExitCode(ActionReport.ExitCode.FAILURE);
             report.setFailureCause(e);
+            if (e instanceof javax.enterprise.inject.spi.DeploymentException) {
+                throw (javax.enterprise.inject.spi.DeploymentException) e;
+            }
             }
         
         return context.getActionReport();
@@ -1535,6 +1544,9 @@ public class CommandRunnerImpl implements CommandRunner {
                 ActionReport.MessagePart childPart =
                         report.getTopMessagePart().addChild();
                 childPart.setMessage(getUsageText(model));
+                if (ex instanceof javax.enterprise.inject.spi.DeploymentException) {
+                    throw (javax.enterprise.inject.spi.DeploymentException) ex;
+                }
                 return;
             }
             /*

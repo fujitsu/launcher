@@ -37,6 +37,12 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+/*
+ * Portions Copyright 2017-2018 Fujitsu Limited.
+ * 
+ * Fujitsu elects to include this software in this distribution under the CDDL
+ * license.
+ */
 
 package com.sun.enterprise.v3.server;
 
@@ -528,6 +534,7 @@ public class ApplicationLifecycle implements Deployment, PostConstruct {
                 }
             } else {
                 events.send(new Event<DeploymentContext>(Deployment.DEPLOYMENT_FAILURE, context));
+                throw new javax.enterprise.inject.spi.DeploymentException(report.getFailureCause());
             }
         }
     }

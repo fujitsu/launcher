@@ -37,6 +37,12 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+/*
+ * Portions Copyright 2017-2018 Fujitsu Limited.
+ * 
+ * Fujitsu elects to include this software in this distribution under the CDDL
+ * license.
+ */
 
 package org.glassfish.deployment.admin;
 
@@ -543,6 +549,9 @@ public class DeployCommand extends DeployCommandParameters implements AdminComma
             report.setActionExitCode(ActionReport.ExitCode.FAILURE);
             report.setMessage(e.getMessage());
             report.setFailureCause(e);
+            if (e instanceof javax.enterprise.inject.spi.DeploymentException) {
+                throw (javax.enterprise.inject.spi.DeploymentException) e;
+            }
         } finally {
             events.unregister(this);
             try {

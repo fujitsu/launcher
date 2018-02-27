@@ -41,6 +41,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.enterprise.inject.spi.AnnotatedType;
+import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 
 /**
  * @author <a href="mailto:struberg@yahoo.de">Mark Struberg</a>
@@ -61,6 +63,12 @@ public class ConfigExtension implements Extension {
 
     private Set<InjectionPoint> injectionPoints = new HashSet<>();
 
+    public void beforeBeanDiscovery(@Observes BeforeBeanDiscovery bbd, BeanManager bm) {
+        AnnotatedType<ConfigInjectionProducer> configInjectionProducer = bm.createAnnotatedType(ConfigInjectionProducer.class);
+        bbd.addAnnotatedType(configInjectionProducer, ConfigInjectionProducer.class.getName());
+        AnnotatedType<ConfigProperty> configProperty = bm.createAnnotatedType(ConfigProperty.class);
+        bbd.addAnnotatedType(configProperty, ConfigProperty.class.getName());
+    }
 
     public void collectConfigProducer(@Observes ProcessInjectionPoint<?, ?> pip) {
         ConfigProperty configProperty = pip.getInjectionPoint().getAnnotated().getAnnotation(ConfigProperty.class);
@@ -103,9 +111,13 @@ public class ConfigExtension implements Extension {
                 // a direct injection of a ConfigProperty
                 // that means a Converter must exist.
                 String key = ConfigInjectionBean.getConfigKey(injectionPoint, configProperty);
-                if ((isDefaultUnset(configProperty.defaultValue()))
-                        && !config.getOptionalValue(key, (Class) type).isPresent()) {
-                    deploymentProblems.add("No Config Value exists for " + key);
+                try {
+                    if ((isDefaultUnset(configProperty.defaultValue()))
+                            && !config.getOptionalValue(key, (Class) type).isPresent()) {
+                        deploymentProblems.add("No Config Value exists for " + key);
+                    }
+                } catch (Exception ex) {
+                    deploymentProblems.add("No Config Value exists for " + key + ". " + ex.getMessage());
                 }
             }
         }

@@ -3,7 +3,8 @@
 
     DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 
-    Copyright (c) 2017 Fujitsu Limited and/or its affiliates. All rights reserved.
+    Copyright (c) 2017-2018 Fujitsu Limited and/or its affiliates. All rights
+    reserved.
 
     The contents of this file are subject to the term of the Common Development
     and Distribution License("CDDL") (collectively, the "License").  You
@@ -28,7 +29,7 @@
     <parent>
         <groupId>com.fujitsu.launcher</groupId>
         <artifactId>launcher</artifactId>
-        <version>1.0</version>
+        <version>1.0.1</version>
     </parent>
     <groupId>com.fujitsu.launcher</groupId>
     <artifactId>launcher-impl</artifactId>
@@ -44,6 +45,10 @@
         <dependency>
             <groupId>org.glassfish.main.extras</groupId>
             <artifactId>glassfish-embedded-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.geronimo.config</groupId>
+            <artifactId>geronimo-config-impl</artifactId>
         </dependency>
         <dependency>
             <groupId>args4j</groupId>

@@ -3,7 +3,8 @@
 
     DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 
-    Copyright (c) 2017 Fujitsu Limited and/or its affiliates. All rights reserved.
+    Copyright (c) 2017-2018 Fujitsu Limited and/or its affiliates. All rights
+    reserved.
 
     The contents of this file are subject to the term of the Common Development
     and Distribution License("CDDL") (collectively, the "License").  You
@@ -26,7 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.fujitsu.launcher</groupId>
     <artifactId>launcher</artifactId>
-    <version>1.0</version>
+    <version>1.0.1</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -34,17 +35,16 @@
         <module>launcher-dist</module>
     </modules>
 
+    <properties>
+        <mp.config.version>1.0</mp.config.version>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>com.fujitsu.launcher</groupId>
-                <artifactId>launcher-impl</artifactId>
-                <version>1.0</version>
-            </dependency>
-            <dependency>
                 <groupId>org.eclipse.microprofile.config</groupId>
                 <artifactId>microprofile-config-api</artifactId>
-                <version>1.0</version>
+                <version>${mp.config.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.geronimo.config</groupId>

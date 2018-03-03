@@ -1,5 +1,7 @@
 = Launcher
 
+![](https://raw.githubusercontent.com/fujitsu/launcher/kzrlocal/image/launcher-logo.png)
+
 == About Launcher
 Launcher is one of MicroProfile implementations.
 Launcher 1.0 is conformed to MicroProfile 1.1 which includes CDI 1.2, JSON-P 1.0, JAX-RS 2.0 and MicroProfile Config 1.0 API.

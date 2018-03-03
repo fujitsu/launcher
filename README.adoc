@@ -1,6 +1,6 @@
 = Launcher
 
-image::https://raw.githubusercontent.com/fujitsu/launcher/kzrlocal/image/launcher-logo.png[width=96,height=96]
+image::https://raw.githubusercontent.com/fujitsu/launcher/image/logo/launcher-logo.png[width=96,height=96]
 
 == About Launcher
 Launcher is one of MicroProfile implementations.

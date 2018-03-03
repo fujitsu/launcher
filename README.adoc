@@ -1,6 +1,6 @@
 = Launcher
 
-![](https://raw.githubusercontent.com/fujitsu/launcher/kzrlocal/image/launcher-logo.png)
+image::https://raw.githubusercontent.com/fujitsu/launcher/kzrlocal/image/launcher-logo.png[]
 
 == About Launcher
 Launcher is one of MicroProfile implementations.

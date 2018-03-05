@@ -11,7 +11,7 @@ java -jar launcher-1.0.jar [--config-file file-path] [--http-listener port-numbe
 |Name            |Purpose |Default Value
 |--config-file   |Specify the name of configuration file (domain.xml). Do not use --http-listener and/or --https-listener when using this option. |
 |--http-listener |Specify http port number. Do not use --config-file when using this option. |8080
-|--https-listener|Specify http port number. Do not use --config-file when using this option. |8181
+|--https-listener|Specify https port number. Do not use --config-file when using this option. |8081
 |--deploy        |Specify the name of war file to deploy. This option is required. |
 |--contextroot   |Specify context-root. |/
 |--libraries     |Specify the absolute path names of jar files which are refered from the application. If you specify more than one files, use comma(,) as a separator. These files will not be included in the generated uber-jar. |

@@ -16,6 +16,22 @@
  */
 package org.apache.geronimo.config;
 
+import org.apache.geronimo.config.converters.BooleanConverter;
+import org.apache.geronimo.config.converters.ClassConverter;
+import org.apache.geronimo.config.converters.DoubleConverter;
+import org.apache.geronimo.config.converters.DurationConverter;
+import org.apache.geronimo.config.converters.FloatConverter;
+import org.apache.geronimo.config.converters.InstantConverter;
+import org.apache.geronimo.config.converters.IntegerConverter;
+import org.apache.geronimo.config.converters.LocalDateConverter;
+import org.apache.geronimo.config.converters.LocalDateTimeConverter;
+import org.apache.geronimo.config.converters.LocalTimeConverter;
+import org.apache.geronimo.config.converters.LongConverter;
+import org.apache.geronimo.config.converters.OffsetDateTimeConverter;
+import org.apache.geronimo.config.converters.OffsetTimeConverter;
+import org.apache.geronimo.config.converters.StringConverter;
+import org.apache.geronimo.config.converters.URLConverter;
+import org.apache.geronimo.config.converters.MicroProfileTypedConverter;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -25,9 +41,21 @@ import org.apache.geronimo.config.configsource.PropertyFileConfigSourceProvider;
 import org.apache.geronimo.config.configsource.SystemEnvConfigSource;
 import org.apache.geronimo.config.configsource.SystemPropertyConfigSource;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.net.URL;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 
 import javax.enterprise.inject.Typed;
@@ -42,12 +70,16 @@ import static java.util.Arrays.asList;
 @Typed
 @Vetoed
 public class DefaultConfigBuilder implements ConfigBuilder {
-    protected ClassLoader forClassLoader;
+    private ClassLoader forClassLoader;
     private final List<ConfigSource> sources = new ArrayList<>();
-    private final List<Converter<?>> converters = new ArrayList<>();
     private boolean ignoreDefaultSources = true;
     private boolean ignoreDiscoveredSources = true;
     private boolean ignoreDiscoveredConverters = true;
+    private final Map<Type, MicroProfileTypedConverter<?>> registeredConverters = new HashMap<>();
+
+    public DefaultConfigBuilder() {
+        this.registerDefaultConverters();
+    }
 
     @Override
     public ConfigBuilder addDefaultSources() {
@@ -75,7 +107,24 @@ public class DefaultConfigBuilder implements ConfigBuilder {
 
     @Override
     public ConfigBuilder withConverters(Converter<?>... converters) {
-        this.converters.addAll(asList(converters));
+        for(Converter<?> converter : converters) {
+            Type typeOfConverter = getTypeOfConverter(converter.getClass());
+            registerConverter(typeOfConverter, new MicroProfileTypedConverter<>(converter));
+        }
+        return this;
+    }
+
+    @Override
+    public <T> ConfigBuilder withConverter(Class<T> type, int priority, Converter<T> converter) {
+        MicroProfileTypedConverter<T> microProfileTypedConverter = new MicroProfileTypedConverter<T>(converter, priority);
+        return registerConverter(type, microProfileTypedConverter);
+    }
+
+    private <T> ConfigBuilder registerConverter(Type type, MicroProfileTypedConverter<T> microProfileTypedConverter) {
+        MicroProfileTypedConverter<?> existing = registeredConverters.get(type);
+        if(existing == null || microProfileTypedConverter.getPriority() > existing.getPriority()) {
+            registeredConverters.put(type, microProfileTypedConverter);
+        }
         return this;
     }
 
@@ -114,14 +163,14 @@ public class DefaultConfigBuilder implements ConfigBuilder {
 
         if (!ignoreDiscoveredConverters) {
             ServiceLoader<Converter> converterLoader = ServiceLoader.load(Converter.class, forClassLoader);
-            converterLoader.forEach(converters::add);
+            converterLoader.forEach(this::withConverters);
         }
 
         ConfigImpl config = new ConfigImpl();
         config.addConfigSources(configSources);
 
-        for (Converter<?> converter : converters) {
-            config.addConverter(converter);
+        for (Map.Entry<Type, MicroProfileTypedConverter<?>> entry : registeredConverters.entrySet()) {
+            config.addConverter(entry.getKey(), entry.getValue());
         }
 
         return config;
@@ -135,5 +184,52 @@ public class DefaultConfigBuilder implements ConfigBuilder {
         configSources.addAll(new PropertyFileConfigSourceProvider("META-INF/microprofile-config.properties", true, forClassLoader).getConfigSources(forClassLoader));
 
         return configSources;
+    }
+
+    private void registerDefaultConverters() {
+        registeredConverters.put(String.class, new MicroProfileTypedConverter<>(StringConverter.INSTANCE));
+        registeredConverters.put(Boolean.class, new MicroProfileTypedConverter<>(BooleanConverter.INSTANCE));
+        registeredConverters.put(boolean.class, new MicroProfileTypedConverter<>(BooleanConverter.INSTANCE));
+        registeredConverters.put(Double.class, new MicroProfileTypedConverter<>(DoubleConverter.INSTANCE));
+        registeredConverters.put(double.class, new MicroProfileTypedConverter<>(DoubleConverter.INSTANCE));
+        registeredConverters.put(Float.class, new MicroProfileTypedConverter<>(FloatConverter.INSTANCE));
+        registeredConverters.put(float.class, new MicroProfileTypedConverter<>(FloatConverter.INSTANCE));
+        registeredConverters.put(Integer.class, new MicroProfileTypedConverter<>(IntegerConverter.INSTANCE));
+        registeredConverters.put(int.class, new MicroProfileTypedConverter<>(IntegerConverter.INSTANCE));
+        registeredConverters.put(Long.class, new MicroProfileTypedConverter<>(LongConverter.INSTANCE));
+        registeredConverters.put(long.class, new MicroProfileTypedConverter<>(LongConverter.INSTANCE));
+
+        registeredConverters.put(Duration.class, new MicroProfileTypedConverter<>(DurationConverter.INSTANCE));
+        registeredConverters.put(LocalTime.class, new MicroProfileTypedConverter<>(LocalTimeConverter.INSTANCE));
+        registeredConverters.put(LocalDate.class, new MicroProfileTypedConverter<>(LocalDateConverter.INSTANCE));
+        registeredConverters.put(LocalDateTime.class, new MicroProfileTypedConverter<>(LocalDateTimeConverter.INSTANCE));
+        registeredConverters.put(OffsetTime.class, new MicroProfileTypedConverter<>(OffsetTimeConverter.INSTANCE));
+        registeredConverters.put(OffsetDateTime.class, new MicroProfileTypedConverter<>(OffsetDateTimeConverter.INSTANCE));
+        registeredConverters.put(Instant.class, new MicroProfileTypedConverter<>(InstantConverter.INSTANCE));
+
+        registeredConverters.put(URL.class, new MicroProfileTypedConverter<>(URLConverter.INSTANCE));
+        registeredConverters.put(Class.class, new MicroProfileTypedConverter<>(ClassConverter.INSTANCE));
+    }
+
+    private Type getTypeOfConverter(Class clazz) {
+        if (clazz.equals(Object.class)) {
+            return null;
+        }
+
+        Type[] genericInterfaces = clazz.getGenericInterfaces();
+        for (Type genericInterface : genericInterfaces) {
+            if (genericInterface instanceof ParameterizedType) {
+                ParameterizedType pt = (ParameterizedType) genericInterface;
+                if (pt.getRawType().equals(Converter.class)) {
+                    Type[] typeArguments = pt.getActualTypeArguments();
+                    if (typeArguments.length != 1) {
+                        throw new IllegalStateException("Converter " + clazz + " must be a ParameterisedType");
+                    }
+                    return typeArguments[0];
+                }
+            }
+        }
+
+        return getTypeOfConverter(clazz.getSuperclass());
     }
 }

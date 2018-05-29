@@ -164,6 +164,19 @@ public class LauncherMain {
     private void launch() {
         try {
             GlassFish glassfish = GlassFishRuntime.bootstrap().newGlassFish(glassfishProperties);
+            
+            // add shutdown hook to clean up temporary files
+            Runtime.getRuntime().addShutdownHook( new Thread() {
+                public void run() {
+                    try {
+                        glassfish.stop();
+                        glassfish.dispose();
+                    } catch (Exception e) {
+                        // fall through;
+                    }
+                }
+            });
+            
             glassfish.start();
             glassfish.getDeployer().deploy(new File(inputWar), deployProperties.getDeployOptions());
         } catch (Throwable th) {
@@ -173,9 +186,10 @@ public class LauncherMain {
     }
 
     private Path getTemplate() throws IOException {
-        URL url = this.getClass().getClassLoader().getResource("META-INF");
+        String resourceName = this.getClass().getCanonicalName().replaceAll("\\.", "/") + ".class";
+        URL url = this.getClass().getClassLoader().getResource(resourceName);
         if (url == null) {
-            throw new FileNotFoundException("META-INF has not found.");
+            throw new FileNotFoundException(resourceName + " has not found.");
         }
         JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
         return Paths.get(jarURLConnection.getJarFile().getName());

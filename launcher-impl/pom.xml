@@ -51,6 +51,15 @@
             <artifactId>geronimo-config-impl</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.opentracing.contrib</groupId>
+            <artifactId>opentracing-jaxrs2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentracing.contrib</groupId>
+            <artifactId>opentracing-tracerresolver</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>args4j</groupId>
             <artifactId>args4j</artifactId>
         </dependency>

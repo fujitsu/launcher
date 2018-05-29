@@ -45,18 +45,33 @@
             <artifactId>launcher-impl</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.eclipse.microprofile.config</groupId>
             <artifactId>microprofile-config-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.microprofile.opentracing</groupId>
+            <artifactId>microprofile-opentracing-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.main.extras</groupId>
+            <artifactId>glassfish-embedded-web</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.geronimo.config</groupId>
             <artifactId>geronimo-config-impl</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.glassfish.main.extras</groupId>
-            <artifactId>glassfish-embedded-web</artifactId>
+            <groupId>io.opentracing.contrib</groupId>
+            <artifactId>opentracing-jaxrs2</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.opentracing.contrib</groupId>
+            <artifactId>opentracing-tracerresolver</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>args4j</groupId>
             <artifactId>args4j</artifactId>
@@ -66,6 +81,18 @@
     <build>
         <finalName>launcher-${project.version}</finalName>
         <plugins>
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -77,17 +104,54 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.fujitsu.launcher.LauncherMain</mainClass>
+                                </transformer>
+
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                                    <addHeader>true</addHeader>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>org.apache.geronimo.specs:geronimo-atinject_1.0_spec</exclude>
+                                </excludes>
+                            </artifactSet>
                             <filters>
+                                <filter>
+                                    <artifact>org.eclipse.microprofile.config:microprofile-config-api</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>org.osgi:org.osgi.annotation.versioning</artifact>
+                                    <excludes>
+                                        <exclude>LICENSE</exclude>
+                                    </excludes>
+                                </filter>
                                 <filter>
                                     <artifact>org.apache.geronimo.config:geronimo-config-impl</artifact>
                                     <excludes>
+                                        <exclude>META-INF/LICENSE</exclude>
                                         <exclude>org/apache/geronimo/config/cdi/ConfigExtension.class</exclude>
                                         <exclude>org/apache/geronimo/config/DefaultConfigBuilder.class</exclude>
                                     </excludes>
                                 </filter>
                                 <filter>
+                                    <artifact>org.eclipse.microprofile.opentracing:microprofile-opentracing-api</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
                                     <artifact>org.glassfish.main.extras:glassfish-embedded-web</artifact>
                                     <excludes>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                        <exclude>META-INF/LICENSE.txt</exclude>
+                                        <exclude>META-INF/services/org.glassfish.jersey.internal.spi.AutoDiscoverable</exclude>
                                         <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$1.class</exclude>
                                         <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$2$1.class</exclude>
                                         <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$2.class</exclude>
@@ -112,36 +176,13 @@
                                         <exclude>org/glassfish/deployment/admin/DeployCommand$Interceptor.class</exclude>
                                     </excludes>
                                 </filter>
+                                <filter>
+                                    <artifact>args4j:args4j</artifact>
+                                    <excludes>
+                                        <exclude>LICENSE</exclude>
+                                    </excludes>
+                                </filter>
                             </filters>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.fujitsu.launcher.LauncherMain</mainClass>
-                                </transformer>
-
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
-                                    <addHeader>true</addHeader>
-                                </transformer>
-
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.DontIncludeResourceTransformer">
-                                    <resources>
-                                        <resource>LICENSE</resource>
-                                        <resource>LICENSE.txt</resource>
-                                        <resource>javax.enterprise.inject.spi.Extension</resource>
-                                    </resources>
-                                </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-                                    <resource>LICENSE.txt</resource>
-                                    <file>LICENSE.txt</file>
-                                </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-                                    <resource>META-INF/3RD-PARTY-LICENSE.txt</resource>
-                                    <file>3RD-PARTY-LICENSE.txt</file>
-                                </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-                                    <resource>META-INF/services/javax.enterprise.inject.spi.Extension</resource>
-                                    <file>javax.enterprise.inject.spi.Extension</file>
-                                </transformer>
-                            </transformers>
                         </configuration>
                     </execution>
                 </executions>

@@ -28,6 +28,8 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
 /**
+ * A producer of the singleton {@link Tracer} for CDI.
+ * The tracer is obtained via {@link TracerResolver}.
  *
  * @author Tsuyoshi Yoshitomi
  */

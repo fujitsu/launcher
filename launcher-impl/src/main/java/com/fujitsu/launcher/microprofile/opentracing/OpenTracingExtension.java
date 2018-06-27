@@ -28,6 +28,7 @@ import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.Extension;
 
 /**
+ * A CDI extension for registering producers and interceptors for opentracing.
  *
  * @author Tsuyoshi Yoshitomi
  */

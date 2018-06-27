@@ -36,7 +36,10 @@ import io.opentracing.contrib.jaxrs2.server.ServerTracingDynamicFeature;
 import io.opentracing.util.GlobalTracer;
 
 /**
- *
+ * This class is an {@link AutoDiscoverable} implementation for Launcher.
+ * It registers JAX-RS features and filters for opentracing.
+ * It also registers an opentracing tracer to {@link GlobalTracer}.
+ * 
  * @author Takahiro Nagao
  */
 @Priority(AutoDiscoverable.DEFAULT_PRIORITY)
@@ -54,7 +57,7 @@ public class OpenTracingAutoDiscoverable implements AutoDiscoverable {
                 return;
             }
             Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Registering OpenTracing tracer, with {0}", tracer.getClass().getName());
-    
+
             GlobalTracer.register(tracer);
         }
 

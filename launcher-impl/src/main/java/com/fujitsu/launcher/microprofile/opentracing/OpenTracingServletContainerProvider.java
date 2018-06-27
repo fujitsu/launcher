@@ -33,6 +33,7 @@ import org.glassfish.jersey.servlet.internal.spi.ServletContainerProvider;
 import io.opentracing.contrib.jaxrs2.server.SpanFinishingFilter;
 
 /**
+ * This class is a {@link ServletContainerProvider} for opentracing to add {@link SpanFinishingFilter}.
  *
  * @author Takahiro Nagao
  */

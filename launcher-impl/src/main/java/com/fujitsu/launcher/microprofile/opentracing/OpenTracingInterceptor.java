@@ -37,6 +37,7 @@ import io.opentracing.Tracer;
 import io.opentracing.Tracer.SpanBuilder;
 
 /**
+ * A CDI interceptor for tracing method invocations, excluding JAX-RS endpoints.
  * 
  * @author Takahiro Nagao
  */

@@ -23,9 +23,8 @@ package com.fujitsu.launcher.microprofile.opentracing;
 
 import io.opentracing.Tracer;
 import io.opentracing.contrib.tracerresolver.TracerResolver;
-import javax.enterprise.context.Dependent;
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
 
 /**
  * A producer of the singleton {@link Tracer} for CDI.
@@ -33,13 +32,12 @@ import javax.inject.Singleton;
  *
  * @author Tsuyoshi Yoshitomi
  */
-@Dependent
+@ApplicationScoped
 public class TracerProducer {
 
     private static Tracer tracer;
 
     @Produces
-    @Singleton
     public static Tracer getTracer() {
         if (tracer == null) {
             tracer = TracerResolver.resolveTracer();

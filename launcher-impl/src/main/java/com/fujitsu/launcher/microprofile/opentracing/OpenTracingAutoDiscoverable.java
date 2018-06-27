@@ -25,10 +25,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.Priority;
+import javax.ws.rs.Priorities;
 import javax.ws.rs.core.FeatureContext;
 
 import org.glassfish.jersey.internal.spi.AutoDiscoverable;
 
+import io.opentracing.ActiveSpan;
+import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.contrib.jaxrs2.client.ClientTracingFeature;
 import io.opentracing.contrib.jaxrs2.server.OperationNameProvider;
@@ -47,6 +50,8 @@ public class OpenTracingAutoDiscoverable implements AutoDiscoverable {
 
     private static ServerTracingDynamicFeature serverTracingDynamicFeature;
     private static ClientTracingFeature clientTracingFeature;
+
+    private static final int CLIENT_TRACING_FILTER_PRIORITY = Priorities.HEADER_DECORATOR;
 
     @Override
     public void configure(final FeatureContext context) {
@@ -76,9 +81,18 @@ public class OpenTracingAutoDiscoverable implements AutoDiscoverable {
                 clientTracingFeature = 
                         new ClientTracingFeature
                         .Builder(GlobalTracer.get())
+                        .withPriority(CLIENT_TRACING_FILTER_PRIORITY)
                         .withTraceSerialization(false)
                         .build();
                 context.register(clientTracingFeature);
+            }
+
+            ActiveSpan activeSpan = GlobalTracer.get().activeSpan();
+            if (activeSpan != null) {
+                SpanContext parentSpanContext = activeSpan.context();
+                // Register SpanContextPropagationFilter with priority CLIENT_TRACING_FILTER_PRIORITY - 1
+                // so that it is called before ClientTracingFilter
+                context.register(new SpanContextPropagationFilter(parentSpanContext), CLIENT_TRACING_FILTER_PRIORITY - 1);
             }
         }
     }

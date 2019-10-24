@@ -17,7 +17,6 @@
  * Portions Copyright 2018-2019 Fujitsu Limited.
  */
 
-
 package org.glassfish.deployment.admin;
 
 import java.net.URI;

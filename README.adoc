@@ -2,24 +2,31 @@
 
 image::https://raw.githubusercontent.com/fujitsu/launcher/image/logo/launcher-logo.png[width=96,height=96]
 
-== About Launcher
-Launcher is one of MicroProfile implementations.
-Launcher 1.0 is conformed to MicroProfile 1.1 which includes CDI 1.2, JSON-P 1.0, JAX-RS 2.0 and MicroProfile Config 1.0 API.
-For the details of MicroProfile, please refer link:https://projects.eclipse.org/projects/technology.microprofile[MicroProfile].
+== Overview
+Launcher is an implementation of https://microprofile.io/[MicroProfile].
 
-In addition that, Launcher provides the feature to create a portable uber(fat) jar.
-For the details, please refer Usage.
+Launcher 2.0 alpha 2 conforms to a subset of MicroProfile 2.2.
+Currently supported APIs are as follows:
 
+* CDI 2.0
+* JAX-RS 2.1
+* JSON-B 1.0
+* JSON-P 1.1
+* Common Annotations 1.3
+* MicroProfile Config 1.3
+* MicroProfile Fault Tolerance 2.0
+* MicroProfile Rest Client 1.2
 
-== How to build
-[source]
+Launcher provides features to run MicroProfile applications and create portable uber (fat) JARs.
+For more details, please refer to link:docs/Usage.adoc[].
+
+== Build instructions
 ----
 $ mvn clean install
 ----
 
 == Usage
-Please refer link:doc/Usage.adoc[].
+Refer to link:docs/Usage.adoc[].
 
-== Download
-A binary form can be downloaded from link:https://github.com/fujitsu/launcher/releases[].
-
+== Downloads
+Binary distributions can be obtained from link:https://github.com/fujitsu/launcher/releases[].

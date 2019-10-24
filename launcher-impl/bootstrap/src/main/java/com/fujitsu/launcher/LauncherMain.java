@@ -31,9 +31,12 @@ import java.util.logging.Logger;
 import org.glassfish.embeddable.GlassFish;
 import org.glassfish.embeddable.GlassFishProperties;
 import org.glassfish.embeddable.GlassFishRuntime;
+import org.glassfish.internal.api.Globals;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+
+import com.sun.enterprise.server.logging.GFFileHandler;
 
 /**
  *
@@ -48,7 +51,7 @@ public class LauncherMain {
     private int httpListener = 8080;
 
     @Option(name = "--https-listener")
-    private int httpsListener = 8081;
+    private int httpsListener = 8181;
 
     @Option(name = "--deploy")
     private String inputWar;
@@ -159,10 +162,18 @@ public class LauncherMain {
                 public void run() {
                     try {
                         glassfish.stop();
+                        // work-around for deleting server.log on disposal
+                        forceCloseLog();
                         glassfish.dispose();
                     } catch (Exception e) {
                         // fall through;
                     }
+                }
+
+                private void forceCloseLog() {
+                    GFFileHandler h = Globals.get(GFFileHandler.class);
+                    h.preDestroy();
+                    h.close();
                 }
             });
             

@@ -38,6 +38,21 @@
         </dependency>
         <dependency>
             <groupId>com.fujitsu.launcher</groupId>
+            <artifactId>microprofile-fault-tolerance</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fujitsu.launcher</groupId>
+            <artifactId>microprofile-metrics</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fujitsu.launcher</groupId>
+            <artifactId>microprofile-rest-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fujitsu.launcher</groupId>
             <artifactId>bootstrap</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -73,7 +88,6 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.fujitsu.launcher.LauncherMain</mainClass>
                                 </transformer>
-
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
                                     <addHeader>true</addHeader>
                                 </transformer>
@@ -81,39 +95,23 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>META-INF/hk2-locator/default</resource>
                                 </transformer>
+                                <!-- aggregate license notices into META-INF/3RD-PARTY-LICENSE.txt for clarification -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.DontIncludeResourceTransformer">
+                                    <resources>
+                                        <resource>license.header</resource>
+                                        <resource>license.html</resource>
+                                        <resource>LICENSE</resource>
+                                        <resource>LICENSE.md</resource>
+                                        <resource>META-INF/LICENSE</resource>
+                                        <resource>META-INF/LICENSE.md</resource>
+                                        <resource>META-INF/LICENSE.txt</resource>
+                                    </resources>
+                                </transformer>
                             </transformers>
                             <filters>
                                 <filter>
-                                    <artifact>org.eclipse.microprofile.config:microprofile-config-api</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/LICENSE</exclude>
-                                    </excludes>
-                                </filter>
-                                <filter>
-                                    <artifact>org.osgi:org.osgi.annotation.versioning</artifact>
-                                    <excludes>
-                                        <exclude>LICENSE</exclude>
-                                    </excludes>
-                                </filter>
-                                <filter>
-                                    <artifact>org.apache.geronimo.config:geronimo-config-impl</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/LICENSE</exclude>
-                                        <exclude>org/apache/geronimo/config/cdi/ConfigExtension.class</exclude>
-                                        <exclude>org/apache/geronimo/config/DefaultConfigBuilder.class</exclude>
-                                    </excludes>
-                                </filter>
-                                <filter>
-                                    <artifact>org.eclipse.microprofile.opentracing:microprofile-opentracing-api</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/LICENSE</exclude>
-                                    </excludes>
-                                </filter>
-                                <filter>
                                     <artifact>org.glassfish.main.extras:glassfish-embedded-web</artifact>
                                     <excludes>
-                                        <exclude>META-INF/LICENSE</exclude>
-                                        <exclude>META-INF/LICENSE.txt</exclude>
                                         <exclude>META-INF/services/org.glassfish.jersey.internal.spi.AutoDiscoverable</exclude>
                                         <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$1.class</exclude>
                                         <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$2$1.class</exclude>
@@ -138,12 +136,6 @@
                                         <exclude>org/glassfish/deployment/admin/DeployCommand.class</exclude>
                                         <exclude>org/glassfish/deployment/admin/DeployCommand$Interceptor.class</exclude>
                                         <exclude>org/glassfish/embed/domain.xml</exclude>
-                                    </excludes>
-                                </filter>
-                                <filter>
-                                    <artifact>args4j:args4j</artifact>
-                                    <excludes>
-                                        <exclude>LICENSE</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

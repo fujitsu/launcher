@@ -17,7 +17,6 @@
  * Portions Copyright 2018-2019 Fujitsu Limited.
  */
 
-
 package com.sun.enterprise.v3.admin;
 
 import com.sun.enterprise.admin.event.AdminCommandEventBrokerImpl;

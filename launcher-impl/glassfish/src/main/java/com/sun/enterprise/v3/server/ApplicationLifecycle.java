@@ -17,7 +17,6 @@
  * Portions Copyright 2018-2019 Fujitsu Limited.
  */
 
-
 package com.sun.enterprise.v3.server;
 
 import com.sun.enterprise.config.serverbeans.*;

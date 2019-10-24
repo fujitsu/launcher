@@ -1,6 +1,9 @@
-# geronimo-config-impl
 # jackson-module-jaxb-annotations
 # microprofile-config-api
+# microprofile-rest-client-api
+# smallrye-config
+# smallrye-fault-tolerance
+# smallrye-metrics
 
                                  Apache License
                            Version 2.0, January 2004

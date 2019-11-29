@@ -15,16 +15,19 @@
     <parent>
         <groupId>com.fujitsu.launcher</groupId>
         <artifactId>launcher-impl</artifactId>
-        <version>2.0-SNAPSHOT</version>
+        <version>2.0-b01</version>
     </parent>
-    <groupId>com.fujitsu.launcher</groupId>
     <artifactId>microprofile</artifactId>
     <packaging>pom</packaging>
 
     <modules>
         <module>config</module>
         <module>fault-tolerance</module>
+        <module>health</module>
+        <module>jwt-auth</module>
         <module>metrics</module>
+        <module>openapi</module>
+        <module>opentracing</module>
         <module>rest-client</module>
     </modules>
 </project>

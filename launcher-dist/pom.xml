@@ -11,59 +11,62 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    
+
     <parent>
         <groupId>com.fujitsu.launcher</groupId>
-        <artifactId>launcher</artifactId>
-        <version>2.0-SNAPSHOT</version>
+        <artifactId>launcher-parent</artifactId>
+        <version>2.0-b01</version>
     </parent>
-    <groupId>com.fujitsu.launcher</groupId>
-    <artifactId>launcher-dist</artifactId>
+    <artifactId>launcher</artifactId>
     <packaging>jar</packaging>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.fujitsu.launcher</groupId>
             <artifactId>patched-glassfish</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fujitsu.launcher</groupId>
             <artifactId>microprofile-config</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fujitsu.launcher</groupId>
             <artifactId>microprofile-fault-tolerance</artifactId>
-            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fujitsu.launcher</groupId>
+            <artifactId>microprofile-health</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fujitsu.launcher</groupId>
+            <artifactId>microprofile-jwt-auth</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fujitsu.launcher</groupId>
             <artifactId>microprofile-metrics</artifactId>
-            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fujitsu.launcher</groupId>
+            <artifactId>microprofile-open-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fujitsu.launcher</groupId>
+            <artifactId>microprofile-opentracing</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fujitsu.launcher</groupId>
             <artifactId>microprofile-rest-client</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fujitsu.launcher</groupId>
             <artifactId>bootstrap</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
     <build>
-        <finalName>launcher-${project.version}</finalName>
         <plugins>
             <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
-                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <phase>initialize</phase>
@@ -76,7 +79,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.1.0</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -86,7 +88,11 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.fujitsu.launcher.LauncherMain</mainClass>
+                                    <manifestEntries>
+                                        <Main-Class>com.fujitsu.launcher.LauncherMain</Main-Class>
+                                        <!-- do not forget to update uber-jar_MANIFEST.MF -->
+                                        <Add-Opens>java.base/java.lang java.base/java.lang.invoke java.base/java.util java.naming/javax.naming.spi java.rmi/sun.rmi.transport java.xml/com.sun.org.apache.bcel.internal.classfile</Add-Opens>
+                                    </manifestEntries>
                                 </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
                                     <addHeader>true</addHeader>
@@ -136,6 +142,12 @@
                                         <exclude>org/glassfish/deployment/admin/DeployCommand.class</exclude>
                                         <exclude>org/glassfish/deployment/admin/DeployCommand$Interceptor.class</exclude>
                                         <exclude>org/glassfish/embed/domain.xml</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>io.smallrye:smallrye-opentracing</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

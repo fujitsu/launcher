@@ -158,7 +158,7 @@
         </transports>
       </network-config>
       <thread-pools>
-          <thread-pool name="http-thread-pool" max-queue-size="4096"></thread-pool>
+          <thread-pool name="http-thread-pool" max-queue-size="4096" max-thread-pool-size="64"></thread-pool>
           <thread-pool name="thread-pool-1" max-thread-pool-size="200"/>
       </thread-pools>
     </config> 

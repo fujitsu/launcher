@@ -1,3 +1,4 @@
 Manifest-Version: 1.0
 Bundle-SymbolicName: org.glassfish.main.embedded.web
 Main-Class: com.fujitsu.launcher.uberjar.Launcher
+Add-Opens: java.base/java.lang java.base/java.lang.invoke java.base/java.util java.naming/javax.naming.spi java.rmi/sun.rmi.transport java.xml/com.sun.org.apache.bcel.internal.classfile

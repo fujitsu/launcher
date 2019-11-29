@@ -13,6 +13,9 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  */
+/*
+ * Portions Copyright 2019 Fujitsu Limited.
+ */
 
 package com.sun.appserv.connectors.internal.api;
 

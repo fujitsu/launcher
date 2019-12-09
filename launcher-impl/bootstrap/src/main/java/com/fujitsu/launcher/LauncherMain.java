@@ -26,16 +26,21 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import org.glassfish.embeddable.GlassFish;
 import org.glassfish.embeddable.GlassFishProperties;
 import org.glassfish.embeddable.GlassFishRuntime;
+import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.internal.api.Globals;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
+import com.sun.enterprise.glassfish.bootstrap.Constants;
+import com.sun.enterprise.module.bootstrap.StartupContext;
 import com.sun.enterprise.server.logging.GFFileHandler;
 
 /**
@@ -155,32 +160,20 @@ public class LauncherMain {
 
     private void launch() {
         try {
-            GlassFish glassfish = GlassFishRuntime.bootstrap().newGlassFish(glassfishProperties);
-            
-            // add shutdown hook to clean up temporary files
-            Runtime.getRuntime().addShutdownHook( new Thread() {
-                public void run() {
-                    try {
-                        glassfish.stop();
-                        // work-around for deleting server.log on disposal
-                        forceCloseLog();
-                        glassfish.dispose();
-                    } catch (Exception e) {
-                        // fall through;
-                    }
-                }
+            Thread preInitShutdownHook = createPreInitShutdownHook();
+            Runtime.getRuntime().addShutdownHook(preInitShutdownHook);
 
-                private void forceCloseLog() {
-                    GFFileHandler h = Globals.get(GFFileHandler.class);
-                    h.preDestroy();
-                    h.close();
-                }
-            });
-            
+            GlassFish glassfish = GlassFishRuntime.bootstrap().newGlassFish(glassfishProperties);
+
+            Thread postInitShutdownHook = createPostInitShutdownHook(glassfish);
+            Runtime.getRuntime().addShutdownHook(postInitShutdownHook);
+            Runtime.getRuntime().removeShutdownHook(preInitShutdownHook);
+
             glassfish.start();
             glassfish.getDeployer().deploy(new File(inputWar), deployProperties.getDeployOptions());
         } catch (Throwable th) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Server was stopped.", th);
+            cleanInstanceRoot();
             System.exit(1);
         }
     }
@@ -193,5 +186,72 @@ public class LauncherMain {
         }
         JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
         return Paths.get(jarURLConnection.getJarFile().getName());
+    }
+
+    public static Thread createPreInitShutdownHook() {
+        return new Thread() {
+            public void run() {
+                cleanInstanceRoot();
+            }
+        };
+    }
+
+    public static Thread createPostInitShutdownHook(GlassFish glassfish) {
+        return new Thread() {
+            public void run() {
+                try {
+                    glassfish.stop();
+                    // work-around for deleting server.log on disposal
+                    forceCloseLog();
+                    glassfish.dispose();
+                } catch (Exception e) {
+                    // fall through;
+                }
+            }
+
+            private void forceCloseLog() {
+                GFFileHandler h = Globals.get(GFFileHandler.class);
+                h.preDestroy();
+                h.close();
+            }
+        };
+    }
+
+    public static void cleanInstanceRoot() {
+        String instanceRootProp = getInstanceRoot();
+        if (instanceRootProp != null) {
+            File instanceRoot = new File(instanceRootProp);
+            deleteRecursively(instanceRoot);
+        }
+    }
+
+    private static String getInstanceRoot() {
+        Properties arguments = getStartupContextArguments();
+        if (arguments == null) {
+            return System.getProperty(Constants.INSTANCE_ROOT_PROP_NAME);
+        } else {
+            return arguments.getProperty(Constants.INSTANCE_ROOT_PROP_NAME);
+        }
+    }
+
+    private static Properties getStartupContextArguments() {
+        ServiceLocator habitat = Globals.getDefaultHabitat();
+        if (habitat == null) {
+            return null;
+        }
+        StartupContext startupContext = habitat.getService(StartupContext.class);
+        if (startupContext == null) {
+            return null;
+        }
+        return startupContext.getArguments();
+    }
+
+    private static boolean deleteRecursively(File file) {
+        if (file.isDirectory()) {
+            for (File f : file.listFiles()) {
+                deleteRecursively(f);
+            }
+        }
+        return file.delete();
     }
 }

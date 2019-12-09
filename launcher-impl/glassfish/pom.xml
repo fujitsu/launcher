@@ -288,6 +288,12 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- required to compile ssl-impl sources -->
+        <dependency>
+            <groupId>org.glassfish.annotations</groupId>
+            <artifactId>logging-annotation-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
         <!-- JDK 11 -->
         <dependency>
             <groupId>jakarta.xml.bind</groupId>

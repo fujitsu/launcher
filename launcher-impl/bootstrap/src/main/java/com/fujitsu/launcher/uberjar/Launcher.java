@@ -11,6 +11,8 @@
 package com.fujitsu.launcher.uberjar;
 
 import com.fujitsu.launcher.DeployProperties;
+import com.fujitsu.launcher.LauncherMain;
+
 import java.io.InputStream;
 import java.net.URL;
 import java.util.logging.Level;
@@ -45,11 +47,20 @@ public class Launcher {
             DeployProperties deployProperties = new DeployProperties();
             deployProperties.load(dpis);
 
+            Thread preInitShutdownHook = LauncherMain.createPreInitShutdownHook();
+            Runtime.getRuntime().addShutdownHook(preInitShutdownHook);
+
             GlassFish glassfish = GlassFishRuntime.bootstrap().newGlassFish(glassfishProperties);
+
+            Thread postInitShutdownHook = LauncherMain.createPostInitShutdownHook(glassfish);
+            Runtime.getRuntime().addShutdownHook(postInitShutdownHook);
+            Runtime.getRuntime().removeShutdownHook(preInitShutdownHook);
+
             glassfish.start();
             glassfish.getDeployer().deploy(wis, deployProperties.getDeployOptions());
         } catch (Throwable th) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Server was stopped.", th);
+            LauncherMain.cleanInstanceRoot();
             System.exit(1);
         }
     }

@@ -146,15 +146,15 @@
           </protocol>
         </protocols>
         <network-listeners>
-          <network-listener port="0" protocol="http-listener" transport="tcp" name="http-listener" thread-pool="http-thread-pool" enabled="false"/>
-          <network-listener port="0" protocol="https-listener" transport="tcp" name="https-listener" thread-pool="http-thread-pool" enabled="false"/>
+          <network-listener port="8080" protocol="http-listener" transport="tcp" name="http-listener" thread-pool="http-thread-pool" enabled="true"/>
+          <network-listener port="8181" protocol="https-listener" transport="tcp" name="https-listener" thread-pool="http-thread-pool" enabled="true"/>
         </network-listeners>
         <transports>
           <transport name="tcp"></transport>
         </transports>
       </network-config>
       <thread-pools>
-        <thread-pool name="http-thread-pool" max-queue-size="4096" max-thread-pool-size="64"></thread-pool>
+        <thread-pool name="http-thread-pool" max-thread-pool-size="64"/>
         <thread-pool name="thread-pool-1" max-thread-pool-size="200"/>
       </thread-pools>
     </config>

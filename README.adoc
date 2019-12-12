@@ -35,3 +35,7 @@ Refer to link:docs/Usage.adoc[].
 
 == Downloads
 Binary distributions can be obtained from link:https://github.com/fujitsu/launcher/releases[].
+
+== Configuration file example
+
+An example of configuration file which can be used with `--config-file` option is available from link:examples/domain-xml[].

@@ -5,7 +5,7 @@ image::https://raw.githubusercontent.com/fujitsu/launcher/image/logo/launcher-lo
 == Overview
 Launcher is an implementation of https://microprofile.io/[MicroProfile].
 
-Launcher 2.0 beta 1 conforms to a subset of MicroProfile 3.0.
+Launcher 2.0 conforms to MicroProfile 3.0.
 Currently supported APIs are as follows:
 
 * CDI 2.0

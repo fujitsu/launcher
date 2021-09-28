@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Red Hat, Inc.
- * Copyright 2019 Fujitsu Limited.
+ * Copyright 2021 Fujitsu Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.smallrye.config;
+
+import static io.smallrye.config.PropertiesConfigSourceProvider.classPathSources;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.ServiceLoader;
-import java.util.function.Function;
-import java.util.function.UnaryOperator;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.Priority;
 
@@ -41,90 +46,274 @@ import org.eclipse.microprofile.config.spi.Converter;
  * @author <a href="http://jmesnil.net/">Jeff Mesnil</a> (c) 2017 Red Hat inc.
  */
 public class SmallRyeConfigBuilder implements ConfigBuilder {
-
-    private static final String META_INF_MICROPROFILE_CONFIG_PROPERTIES = "../../META-INF/microprofile-config.properties";
-    private static final String WEB_INF_MICROPROFILE_CONFIG_PROPERTIES = "META-INF/microprofile-config.properties";
+    public static final String META_INF_MICROPROFILE_CONFIG_PROPERTIES = "../../META-INF/microprofile-config.properties";
+    public static final String WEB_INF_MICROPROFILE_CONFIG_PROPERTIES = "META-INF/microprofile-config.properties";
 
     // sources are not sorted by their ordinals
-    private List<ConfigSource> sources = new ArrayList<>();
-    private Function<ConfigSource, ConfigSource> sourceWrappers = UnaryOperator.identity();
-    private Map<Type, ConverterWithPriority> converters = new HashMap<>();
-    private ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+    private final List<ConfigSource> sources = new ArrayList<>();
+    private final Map<Type, ConverterWithPriority> converters = new HashMap<>();
+    private final List<String> profiles = new ArrayList<>();
+    private final Set<String> secretKeys = new HashSet<>();
+    private final List<InterceptorWithPriority> interceptors = new ArrayList<>();
+    private final KeyMap<String> defaultValues = new KeyMap<>();
+    private final ConfigMappingProvider.Builder mappingsBuilder = ConfigMappingProvider.builder();
+    private ConfigValidator validator = ConfigValidator.EMPTY;
+    private ClassLoader classLoader = SecuritySupport.getContextClassLoader();
     private boolean addDefaultSources = false;
+    private boolean addDefaultInterceptors = false;
     private boolean addDiscoveredSources = false;
     private boolean addDiscoveredConverters = false;
+    private boolean addDiscoveredInterceptors = false;
+    private boolean addDiscoveredValidator = false;
 
     public SmallRyeConfigBuilder() {
     }
 
     @Override
-    public ConfigBuilder addDiscoveredSources() {
+    public SmallRyeConfigBuilder addDiscoveredSources() {
         addDiscoveredSources = true;
         return this;
     }
 
     @Override
-    public ConfigBuilder addDiscoveredConverters() {
+    public SmallRyeConfigBuilder addDiscoveredConverters() {
         addDiscoveredConverters = true;
         return this;
     }
 
-    private List<ConfigSource> discoverSources() {
+    public SmallRyeConfigBuilder addDiscoveredInterceptors() {
+        addDiscoveredInterceptors = true;
+        return this;
+    }
+
+    public SmallRyeConfigBuilder addDiscoveredValidator() {
+        addDiscoveredValidator = true;
+        return this;
+    }
+
+    List<ConfigSource> discoverSources() {
         List<ConfigSource> discoveredSources = new ArrayList<>();
         ServiceLoader<ConfigSource> configSourceLoader = ServiceLoader.load(ConfigSource.class, classLoader);
-        configSourceLoader.forEach(discoveredSources::add);
+        for (ConfigSource source : configSourceLoader) {
+            discoveredSources.add(source);
+        }
 
         // load all ConfigSources from ConfigSourceProviders
-        ServiceLoader<ConfigSourceProvider> configSourceProviderLoader = ServiceLoader.load(ConfigSourceProvider.class, classLoader);
-        configSourceProviderLoader.forEach(configSourceProvider -> {
-            configSourceProvider.getConfigSources(classLoader)
-                    .forEach(discoveredSources::add);
-        });
+        ServiceLoader<ConfigSourceProvider> configSourceProviderLoader = ServiceLoader.load(ConfigSourceProvider.class,
+                classLoader);
+        for (ConfigSourceProvider configSourceProvider : configSourceProviderLoader) {
+            for (ConfigSource configSource : configSourceProvider.getConfigSources(classLoader)) {
+                discoveredSources.add(configSource);
+            }
+        }
+
+        ServiceLoader<ConfigSourceFactory> configSourceFactoryLoader = ServiceLoader.load(ConfigSourceFactory.class,
+                classLoader);
+        for (ConfigSourceFactory factory : configSourceFactoryLoader) {
+            discoveredSources.add(new ConfigurableConfigSource(factory));
+        }
+
         return discoveredSources;
     }
 
-    private List<Converter> discoverConverters() {
-        List<Converter> converters = new ArrayList<>();
-        ServiceLoader<Converter> converterLoader = ServiceLoader.load(Converter.class, classLoader);
-        converterLoader.forEach(converters::add);
-        return converters;
+    List<Converter<?>> discoverConverters() {
+        List<Converter<?>> discoveredConverters = new ArrayList<>();
+        for (Converter<?> converter : ServiceLoader.load(Converter.class, classLoader)) {
+            discoveredConverters.add(converter);
+        }
+        return discoveredConverters;
+    }
+
+    List<InterceptorWithPriority> discoverInterceptors() {
+        List<InterceptorWithPriority> interceptors = new ArrayList<>();
+        ServiceLoader<ConfigSourceInterceptor> interceptorLoader = ServiceLoader.load(ConfigSourceInterceptor.class,
+                classLoader);
+        for (ConfigSourceInterceptor configSourceInterceptor : interceptorLoader) {
+            interceptors.add(new InterceptorWithPriority(configSourceInterceptor));
+        }
+
+        ServiceLoader<ConfigSourceInterceptorFactory> interceptorFactoryLoader = ServiceLoader
+                .load(ConfigSourceInterceptorFactory.class, classLoader);
+        for (ConfigSourceInterceptorFactory interceptor : interceptorFactoryLoader) {
+            interceptors.add(new InterceptorWithPriority(interceptor));
+        }
+
+        return interceptors;
+    }
+
+    ConfigValidator discoverValidator() {
+        ServiceLoader<ConfigValidator> validatorLoader = ServiceLoader.load(ConfigValidator.class, classLoader);
+        Iterator<ConfigValidator> iterator = validatorLoader.iterator();
+        if (iterator.hasNext()) {
+            return iterator.next();
+        }
+        return ConfigValidator.EMPTY;
     }
 
     @Override
-    public ConfigBuilder addDefaultSources() {
+    public SmallRyeConfigBuilder addDefaultSources() {
         addDefaultSources = true;
         return this;
     }
 
-    private List<ConfigSource> getDefaultSources() {
+    protected List<ConfigSource> getDefaultSources() {
         List<ConfigSource> defaultSources = new ArrayList<>();
 
         defaultSources.add(new EnvConfigSource());
         defaultSources.add(new SysPropConfigSource());
-        defaultSources.addAll(new PropertiesConfigSourceProvider(META_INF_MICROPROFILE_CONFIG_PROPERTIES, true, classLoader).getConfigSources(classLoader));
-        defaultSources.addAll(new PropertiesConfigSourceProvider(WEB_INF_MICROPROFILE_CONFIG_PROPERTIES, true, classLoader).getConfigSources(classLoader));
+        defaultSources.addAll(classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
+        defaultSources.addAll(classPathSources(WEB_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
 
         return defaultSources;
     }
 
+    public SmallRyeConfigBuilder addDefaultInterceptors() {
+        this.addDefaultInterceptors = true;
+        return this;
+    }
+
+    List<InterceptorWithPriority> getDefaultInterceptors() {
+        final List<InterceptorWithPriority> interceptors = new ArrayList<>();
+
+        interceptors.add(new InterceptorWithPriority(new ConfigSourceInterceptorFactory() {
+            @Override
+            public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
+                return profiles.isEmpty() ? new ProfileConfigSourceInterceptor(context)
+                        : new ProfileConfigSourceInterceptor(profiles);
+            }
+
+            @Override
+            public OptionalInt getPriority() {
+                return OptionalInt.of(Priorities.LIBRARY + 600);
+            }
+        }));
+        interceptors.add(new InterceptorWithPriority(new ConfigSourceInterceptorFactory() {
+            @Override
+            public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
+                final Map<String, String> relocations = new HashMap<>();
+                relocations.put(SmallRyeConfig.SMALLRYE_CONFIG_PROFILE, Config.PROFILE);
+                return new RelocateConfigSourceInterceptor(relocations);
+            }
+
+            @Override
+            public OptionalInt getPriority() {
+                return OptionalInt.of(Priorities.LIBRARY + 600 - 1);
+            }
+        }));
+        interceptors.add(new InterceptorWithPriority(new ConfigSourceInterceptorFactory() {
+            @Override
+            public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
+                return new ExpressionConfigSourceInterceptor(context);
+            }
+
+            @Override
+            public OptionalInt getPriority() {
+                return OptionalInt.of(Priorities.LIBRARY + 800);
+            }
+        }));
+        interceptors.add(new InterceptorWithPriority(new SecretKeysConfigSourceInterceptor(secretKeys)));
+
+        return interceptors;
+    }
+
     @Override
-    public ConfigBuilder forClassLoader(ClassLoader classLoader) {
+    public SmallRyeConfigBuilder forClassLoader(ClassLoader classLoader) {
         this.classLoader = classLoader;
         return this;
     }
 
     @Override
-    public ConfigBuilder withSources(ConfigSource... configSources) {
+    public SmallRyeConfigBuilder withSources(ConfigSource... configSources) {
         Collections.addAll(sources, configSources);
         return this;
     }
 
+    public SmallRyeConfigBuilder withSources(Collection<ConfigSource> configSources) {
+        sources.addAll(configSources);
+        return this;
+    }
+
+    public SmallRyeConfigBuilder withSources(ConfigSourceFactory... configSourceFactories) {
+        for (ConfigSourceFactory configSourceFactory : configSourceFactories) {
+            sources.add(new ConfigurableConfigSource(configSourceFactory));
+        }
+        return this;
+    }
+
+    public SmallRyeConfigBuilder withInterceptors(ConfigSourceInterceptor... interceptors) {
+        for (ConfigSourceInterceptor interceptor : interceptors) {
+            this.interceptors.add(new InterceptorWithPriority(interceptor));
+        }
+        return this;
+    }
+
+    public SmallRyeConfigBuilder withInterceptorFactories(ConfigSourceInterceptorFactory... interceptorFactories) {
+        for (ConfigSourceInterceptorFactory interceptorFactory : interceptorFactories) {
+            this.interceptors.add(new InterceptorWithPriority(interceptorFactory));
+        }
+        return this;
+    }
+
+    public SmallRyeConfigBuilder withProfile(String profile) {
+        addDefaultInterceptors();
+        this.profiles.addAll(ProfileConfigSourceInterceptor.convertProfile(profile));
+        return this;
+    }
+
+    public SmallRyeConfigBuilder withProfiles(List<String> profiles) {
+        addDefaultInterceptors();
+        this.profiles.addAll(profiles);
+        return this;
+    }
+
+    public SmallRyeConfigBuilder withSecretKeys(String... keys) {
+        secretKeys.addAll(Stream.of(keys).collect(Collectors.toSet()));
+        return this;
+    }
+
+    public SmallRyeConfigBuilder withDefaultValue(String name, String value) {
+        this.defaultValues.findOrAdd(name).putRootValue(value);
+        return this;
+    }
+
+    public SmallRyeConfigBuilder withDefaultValues(Map<String, String> defaultValues) {
+        for (Map.Entry<String, String> entry : defaultValues.entrySet()) {
+            this.defaultValues.findOrAdd(entry.getKey()).putRootValue(entry.getValue());
+        }
+        return this;
+    }
+
+    public SmallRyeConfigBuilder withMapping(Class<?> klass) {
+        return withMapping(klass, ConfigMappings.getPrefix(klass));
+    }
+
+    public SmallRyeConfigBuilder withMapping(Class<?> klass, String prefix) {
+        mappingsBuilder.addRoot(prefix, klass);
+        return this;
+    }
+
+    public SmallRyeConfigBuilder withMappingIgnore(String path) {
+        mappingsBuilder.addIgnored(path);
+        return this;
+    }
+
+    public SmallRyeConfigBuilder withValidateUnknown(boolean validateUnknown) {
+        mappingsBuilder.validateUnknown(validateUnknown);
+        withDefaultValue(SmallRyeConfig.SMALLRYE_CONFIG_MAPPING_VALIDATE_UNKNOWN, Boolean.toString(validateUnknown));
+        return this;
+    }
+
+    public SmallRyeConfigBuilder withValidator(ConfigValidator validator) {
+        this.validator = validator;
+        return this;
+    }
+
     @Override
-    public ConfigBuilder withConverters(Converter<?>[] converters) {
-        for (Converter<?> converter: converters) {
+    public SmallRyeConfigBuilder withConverters(Converter<?>[] converters) {
+        for (Converter<?> converter : converters) {
             Type type = Converters.getConverterType(converter.getClass());
             if (type == null) {
-                throw new IllegalStateException("Can not add converter " + converter + " that is not parameterized with a type");
+                throw ConfigMessages.msg.unableToAddConverter(converter);
             }
             addConverter(type, getPriority(converter), converter, this.converters);
         }
@@ -132,23 +321,21 @@ public class SmallRyeConfigBuilder implements ConfigBuilder {
     }
 
     @Override
-    public <T> ConfigBuilder withConverter(Class<T> type, int priority, Converter<T> converter) {
+    public <T> SmallRyeConfigBuilder withConverter(Class<T> type, int priority, Converter<T> converter) {
         addConverter(type, priority, converter, converters);
         return this;
     }
 
-    // no @Override
-    public SmallRyeConfigBuilder withWrapper(UnaryOperator<ConfigSource> wrapper) {
-        sourceWrappers = sourceWrappers.andThen(wrapper);
-        return this;
+    static void addConverter(Type type, Converter<?> converter, Map<Type, ConverterWithPriority> converters) {
+        addConverter(type, getPriority(converter), converter, converters);
     }
 
-    private static void addConverter(Type type, int priority, Converter converter, Map<Type, ConverterWithPriority> converters) {
+    static void addConverter(Type type, int priority, Converter<?> converter,
+                             Map<Type, ConverterWithPriority> converters) {
         // add the converter only if it has a higher priority than another converter for the same type
         ConverterWithPriority oldConverter = converters.get(type);
-        int newPriority = getPriority(converter);
         if (oldConverter == null || priority > oldConverter.priority) {
-            converters.put(type, new ConverterWithPriority(converter, newPriority));
+            converters.put(type, new ConverterWithPriority(converter, priority));
         }
     }
 
@@ -161,60 +348,120 @@ public class SmallRyeConfigBuilder implements ConfigBuilder {
         return priority;
     }
 
+    protected List<ConfigSource> getSources() {
+        return sources;
+    }
+
+    protected Map<Type, ConverterWithPriority> getConverters() {
+        return converters;
+    }
+
+    List<InterceptorWithPriority> getInterceptors() {
+        return interceptors;
+    }
+
+    private ConfigValidator getValidator() {
+        if (isAddDiscoveredValidator()) {
+            this.validator = discoverValidator();
+        }
+        return validator;
+    }
+
+    KeyMap<String> getDefaultValues() {
+        return defaultValues;
+    }
+
+    protected boolean isAddDefaultSources() {
+        return addDefaultSources;
+    }
+
+    boolean isAddDefaultInterceptors() {
+        return addDefaultInterceptors;
+    }
+
+    protected boolean isAddDiscoveredSources() {
+        return addDiscoveredSources;
+    }
+
+    protected boolean isAddDiscoveredConverters() {
+        return addDiscoveredConverters;
+    }
+
+    boolean isAddDiscoveredInterceptors() {
+        return addDiscoveredInterceptors;
+    }
+
+    boolean isAddDiscoveredValidator() {
+        return addDiscoveredValidator;
+    }
+
     @Override
-    public Config build() {
-        final List<ConfigSource> sources = new ArrayList<>(this.sources);
-        if (addDiscoveredSources) {
-            sources.addAll(discoverSources());
-        }
-        if (addDefaultSources) {
-            sources.addAll(getDefaultSources());
-        }
+    public SmallRyeConfig build() {
+        ConfigMappingProvider mappingProvider = mappingsBuilder.build();
+        defaultValues.putAll(mappingProvider.getDefaultValues());
 
-        final Map<Type, ConverterWithPriority> converters = new HashMap<>(this.converters);
-
-        if (addDiscoveredConverters) {
-            for(Converter converter : discoverConverters()) {
-                Type type = Converters.getConverterType(converter.getClass());
-                if (type == null) {
-                    throw new IllegalStateException("Can not add converter " + converter + " that is not parameterized with a type");
-                }
-                addConverter(type, getPriority(converter), converter, converters);
-            }
+        try {
+            ConfigMappings configMappings = new ConfigMappings(getValidator());
+            SmallRyeConfig config = new SmallRyeConfig(this, configMappings);
+            mappingProvider.mapConfiguration(config);
+            return config;
+        } catch (ConfigValidationException e) {
+            throw new IllegalStateException(e);
         }
-
-        sources.sort(SmallRyeConfig.CONFIG_SOURCE_COMPARATOR);
-        // wrap all
-        final Function<ConfigSource, ConfigSource> sourceWrappers = this.sourceWrappers;
-        final ListIterator<ConfigSource> it = sources.listIterator();
-        while (it.hasNext()) {
-            it.set(sourceWrappers.apply(it.next()));
-        }
-
-        Map<Type, Converter<?>> configConverters = new HashMap<>();
-        converters.forEach((type, converterWithPriority) -> configConverters.put(type, converterWithPriority.converter));
-        return newConfig(sources, configConverters);
     }
 
-    protected Config newConfig(List<ConfigSource> sources, Map<Type, Converter<?>> configConverters) {
-        ServiceLoader<ConfigFactory> factoryLoader = ServiceLoader.load(ConfigFactory.class, this.classLoader);
-        Iterator<ConfigFactory> iter = factoryLoader.iterator();
-        if ( !iter.hasNext() ) {
-            return new SmallRyeConfig(sources, configConverters);
-        }
-
-        ConfigFactory factory = iter.next();
-        return factory.newConfig(sources, configConverters);
-    }
-
-    private static class ConverterWithPriority {
-        private final Converter converter;
+    static class ConverterWithPriority {
+        private final Converter<?> converter;
         private final int priority;
 
-        private ConverterWithPriority(Converter converter, int priority) {
+        private ConverterWithPriority(Converter<?> converter, int priority) {
             this.converter = converter;
             this.priority = priority;
         }
+
+        Converter<?> getConverter() {
+            return converter;
+        }
     }
 
+    static class InterceptorWithPriority {
+        private static final OptionalInt OPTIONAL_DEFAULT_PRIORITY = OptionalInt
+                .of(ConfigSourceInterceptorFactory.DEFAULT_PRIORITY);
+
+        private final ConfigSourceInterceptorFactory factory;
+        private final int priority;
+
+        private InterceptorWithPriority(ConfigSourceInterceptor interceptor) {
+            this(new ConfigSourceInterceptorFactory() {
+                @Override
+                public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
+                    return interceptor;
+                }
+
+                @Override
+                public OptionalInt getPriority() {
+                    final OptionalInt priority = ConfigSourceInterceptorFactory.super.getPriority();
+                    if (priority.isPresent()) {
+                        return priority;
+                    }
+
+                    final Priority priorityAnnotation = interceptor.getClass().getAnnotation(Priority.class);
+                    return priorityAnnotation != null ? OptionalInt.of(priorityAnnotation.value()) : OPTIONAL_DEFAULT_PRIORITY;
+                }
+            });
+        }
+
+        private InterceptorWithPriority(ConfigSourceInterceptorFactory factory) {
+            this.factory = factory;
+            this.priority = factory.getPriority().orElse(ConfigSourceInterceptorFactory.DEFAULT_PRIORITY);
+        }
+
+        ConfigSourceInterceptor getInterceptor(ConfigSourceInterceptorContext context) {
+            return factory.getInterceptor(context);
+        }
+
+        int getPriority() {
+            return priority;
+        }
+    }
 }

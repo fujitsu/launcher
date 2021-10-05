@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2019-2021 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -31,11 +31,12 @@ import com.fujitsu.launcher.microprofile.jwt.auth.JwtAuthService;
 
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
+import io.smallrye.jwt.auth.cdi.JWTCallerPrincipalFactoryProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 import io.smallrye.jwt.auth.jaxrs.JWTAuthenticationFilter;
-import io.smallrye.jwt.auth.mechanism.JWTHttpAuthenticationMechanism;
+import io.smallrye.jwt.auth.principal.DefaultJWTParser;
 
 public class JwtAuthExtension implements Extension {
 
@@ -55,6 +56,8 @@ public class JwtAuthExtension implements Extension {
             bbd.addAnnotatedType(bm.createAnnotatedType(JWTAuthenticationFilter.class), JWTAuthenticationFilter.class.getName());
             bbd.addAnnotatedType(bm.createAnnotatedType(PrincipalProducer.class), PrincipalProducer.class.getName());
             bbd.addAnnotatedType(bm.createAnnotatedType(RawClaimTypeProducer.class), RawClaimTypeProducer.class.getName());
+            bbd.addAnnotatedType(bm.createAnnotatedType(DefaultJWTParser.class), DefaultJWTParser.class.getName());
+            bbd.addAnnotatedType(bm.createAnnotatedType(JWTCallerPrincipalFactoryProducer.class), JWTCallerPrincipalFactoryProducer.class.getName());
         }
     }
 

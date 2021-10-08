@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2019-2021 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,20 +11,29 @@
 package com.fujitsu.launcher.microprofile.health;
 
 import javax.enterprise.event.Observes;
-import javax.enterprise.inject.spi.AnnotatedType;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.Extension;
 
+import io.smallrye.health.AsyncHealthCheckFactory;
+import io.smallrye.health.registry.LivenessHealthRegistry;
+import io.smallrye.health.registry.ReadinessHealthRegistry;
+import io.smallrye.health.registry.StartupHealthRegistry;
+import io.smallrye.health.registry.WellnessHealthRegistry;
+
 /**
  * Enables {@link HealthReporterProducer}.
- * 
+ *
  * @author Takahiro Nagao
  */
 public class HealthExtension implements Extension {
 
     public void beforeBeanDiscovery(@Observes BeforeBeanDiscovery bbd, BeanManager bm) {
-        AnnotatedType<HealthReporterProducer> reporterProducer = bm.createAnnotatedType(HealthReporterProducer.class);
-        bbd.addAnnotatedType(reporterProducer, HealthReporterProducer.class.getName());
+        bbd.addAnnotatedType(bm.createAnnotatedType(AsyncHealthCheckFactory.class), AsyncHealthCheckFactory.class.getName());
+        bbd.addAnnotatedType(bm.createAnnotatedType(LivenessHealthRegistry.class), LivenessHealthRegistry.class.getName());
+        bbd.addAnnotatedType(bm.createAnnotatedType(ReadinessHealthRegistry.class), ReadinessHealthRegistry.class.getName());
+        bbd.addAnnotatedType(bm.createAnnotatedType(StartupHealthRegistry.class), StartupHealthRegistry.class.getName());
+        bbd.addAnnotatedType(bm.createAnnotatedType(WellnessHealthRegistry.class), WellnessHealthRegistry.class.getName());
+        bbd.addAnnotatedType(bm.createAnnotatedType(HealthReporterProducer.class), HealthReporterProducer.class.getName());
     }
 }

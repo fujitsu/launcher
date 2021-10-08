@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2019-2021 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -26,7 +26,7 @@ import io.smallrye.health.SmallRyeHealthReporter;
 
 /**
  * Provides the health check endpoints.
- * 
+ *
  * @author Takahiro Nagao
  */
 @WebServlet
@@ -35,6 +35,7 @@ public class HealthServlet extends HttpServlet {
     public static final String HEALTH = "/health";
     public static final String HEALTH_LIVE = "/health/live";
     public static final String HEALTH_READY = "/health/ready";
+    public static final String HEALTH_STARTED = "/health/started";
 
     @Inject
     private SmallRyeHealthReporter reporter;
@@ -62,6 +63,8 @@ public class HealthServlet extends HttpServlet {
             report(response, reporter.getLiveness());
         } else if (HEALTH_READY.equals(path)) {
             report(response, reporter.getReadiness());
+        } else if (HEALTH_STARTED.equals(path)) {
+            report(response, reporter.getStartup());
         } else {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             response.getWriter().write("Endpoint " + path + " not found");

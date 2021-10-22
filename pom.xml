@@ -26,7 +26,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <mp.config.version>2.0</mp.config.version>
-        <mp.fault-tolerance.version>2.0.1</mp.fault-tolerance.version>
+        <mp.fault-tolerance.version>3.0</mp.fault-tolerance.version>
         <mp.health.version>3.1</mp.health.version>
         <mp.jwt-auth.version>1.2.2</mp.jwt-auth.version>
         <mp.metrics.version>3.0</mp.metrics.version>
@@ -40,7 +40,7 @@
         <jaxb.version>2.3.2</jaxb.version>
         <jaxws-api.version>2.3.2</jaxws-api.version>
         <smallrye.config.version>2.4.4</smallrye.config.version>
-        <smallrye.fault-tolerance.version>1.0.1</smallrye.fault-tolerance.version>
+        <smallrye.fault-tolerance.version>5.2.1</smallrye.fault-tolerance.version>
         <smallrye.health.version>3.1.1</smallrye.health.version>
         <smallrye.jwt.version>3.3.0</smallrye.jwt.version>
         <smallrye.metrics.version>3.0.3</smallrye.metrics.version>
@@ -52,6 +52,7 @@
         <maven.clean.plugin.version>3.0.0</maven.clean.plugin.version>
         <maven.shade.plugin.version>3.1.0</maven.shade.plugin.version>
         <hk2.plugin.version>2.5.0</hk2.plugin.version>
+        <concurrent-api.version>1.1.1</concurrent-api.version>
     </properties>
 
     <dependencyManagement>
@@ -264,7 +265,7 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-fault-tolerance-2.0</artifactId>
+                <artifactId>smallrye-fault-tolerance</artifactId>
                 <version>${smallrye.fault-tolerance.version}</version>
             </dependency>
             <dependency>
@@ -309,6 +310,21 @@
                 <groupId>io.opentracing.contrib</groupId>
                 <artifactId>opentracing-tracerresolver</artifactId>
                 <version>${opentracing-tracerresolver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.enterprise.concurrent</groupId>
+                <artifactId>jakarta.enterprise.concurrent-api</artifactId>
+                <version>${concurrent-api.version}</version>
+            </dependency>        
+            <dependency>
+                <groupId>org.glassfish.main.concurrent</groupId>
+                <artifactId>concurrent-connector</artifactId>
+                <version>${glassfish.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.main.concurrent</groupId>
+                <artifactId>concurrent-impl</artifactId>
+                <version>${glassfish.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -1,0 +1,2 @@
+io.smallrye.faulttolerance.FaultToleranceExtension
+com.fujitsu.launcher.microprofile.faulttolerance.ProviderExtension

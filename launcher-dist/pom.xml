@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Copyright (c) 2017-2019 Fujitsu Limited and/or its affiliates. All rights
+    Copyright (c) 2017-2021 Fujitsu Limited and/or its affiliates. All rights
     reserved.
 
     This program and the accompanying materials are made available under the
@@ -151,6 +151,13 @@
                                         <exclude>META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener</exclude>
                                     </excludes>
                                 </filter>
+                                <filter>
+                                    <artifact>org.eclipse.persistence:jakarta.persistence</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter> 
                             </filters>
                         </configuration>
                     </execution>

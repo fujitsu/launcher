@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Fujitsu Limited and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019-2021 Fujitsu Limited and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import javax.inject.Inject;
 
@@ -39,7 +40,7 @@ import io.smallrye.openapi.api.OpenApiConfigImpl;
 import io.smallrye.openapi.api.OpenApiDocument;
 import io.smallrye.openapi.runtime.OpenApiProcessor;
 import io.smallrye.openapi.runtime.OpenApiStaticFile;
-import io.smallrye.openapi.runtime.io.OpenApiSerializer.Format;
+import io.smallrye.openapi.runtime.io.Format;
 /**
  *
  * @author Katsuhiro Kunisada
@@ -166,10 +167,10 @@ public class OpenApiService implements PostConstruct, EventListener {
     }
 
     private boolean isClassToBeScanned(OpenApiConfig config, String entry) {
-        Set<String> scanClasses = config.scanClasses();
-        Set<String> scanPackages = config.scanPackages();
-        Set<String> scanExcludeClasses = config.scanExcludeClasses();
-        Set<String> scanExcludePackages = config.scanExcludePackages();
+        Pattern scanClasses = config.scanClasses();
+        Pattern scanPackages = config.scanPackages();
+        Pattern scanExcludeClasses = config.scanExcludeClasses();
+        Pattern scanExcludePackages = config.scanExcludePackages();
 
         if (entry == null) {
             return false;
@@ -179,16 +180,16 @@ public class OpenApiService implements PostConstruct, EventListener {
         String packageName = getPackageName(fqcn);
         boolean ret;
 
-        if (scanClasses.isEmpty() && scanPackages.isEmpty()) {
+        if (scanClasses.pattern().isEmpty() && scanPackages.pattern().isEmpty()) {
             ret = true;
-        } else if (!scanClasses.isEmpty() && scanPackages.isEmpty()) {
-            ret = scanClasses.contains(fqcn);
-        } else if (scanClasses.isEmpty() && !scanPackages.isEmpty()) {
-            ret = scanPackages.contains(packageName);
+        } else if (!scanClasses.pattern().isEmpty() && scanPackages.pattern().isEmpty()) {
+            ret = scanClasses.matcher(fqcn).matches();
+        } else if (scanClasses.pattern().isEmpty() && !scanPackages.pattern().isEmpty()) {
+            ret = scanPackages.matcher(packageName).matches();
         } else {
-            ret = scanClasses.contains(fqcn) || scanPackages.contains(packageName);
+            ret = scanClasses.matcher(fqcn).matches() || scanPackages.matcher(packageName).matches();
         }
-        if (scanExcludeClasses.contains(fqcn) || scanExcludePackages.contains(packageName)) {
+        if (scanExcludeClasses.matcher(fqcn).matches() || scanExcludePackages.matcher(packageName).matches()) {
             ret = false;
         }
         return ret;

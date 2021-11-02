@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2018-2021 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -48,7 +48,7 @@ public class TracerProducer {
 
         Logger.getLogger(TracerProducer.class.getName()).log(Level.INFO, "Registering tracer {0}",
                 tracer.getClass().getName());
-        GlobalTracer.register(tracer);
+        GlobalTracer.registerIfAbsent(tracer);
 
         return tracer;
     }

@@ -1,26 +1,25 @@
 = Launcher
 
-image::https://raw.githubusercontent.com/fujitsu/launcher/image/logo/launcher-logo.png[width=96,height=96]
 
 == Overview
 Launcher is an implementation of https://microprofile.io/[MicroProfile].
 
-Launcher 2.0 conforms to MicroProfile 3.0.
+Launcher 3.0 conforms to MicroProfile 4.1.
 Currently supported APIs are as follows:
 
-* CDI 2.0
-* JAX-RS 2.1
-* JSON-B 1.0
-* JSON-P 1.1
-* Common Annotations 1.3
-* MicroProfile Config 1.3
-* MicroProfile Fault Tolerance 2.0
-* MicroProfile Health 2.0
-* MicroProfile JWT Authentication 1.1
-* MicroProfile Metrics 2.0
-* MicroProfile OpenAPI 1.1
-* MicroProfile OpenTracing 1.3
-* MicroProfile Rest Client 1.3
+* Jakarta Contexts and Dependency Injection 2.0
+* Jakarta RESTful Web Services 2.1
+* Jakarta JSON Binding 1.0
+* Jakarta JSON Processing 1.1
+* Jakarta Annotations 1.3
+* MicroProfile Config 2.0
+* MicroProfile Fault Tolerance 3.0
+* MicroProfile Health 3.1
+* MicroProfile JWT Authentication 1.2
+* MicroProfile Metrics 3.0
+* MicroProfile OpenAPI 2.0
+* MicroProfile OpenTracing 2.0
+* MicroProfile Rest Client 2.0
 
 Launcher provides features to run MicroProfile applications and create portable uber (fat) JARs.
 For more details, please refer to link:docs/Usage.adoc[].

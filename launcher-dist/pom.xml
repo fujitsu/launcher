@@ -120,6 +120,7 @@
                                     <artifact>org.glassfish.main.extras:glassfish-embedded-web</artifact>
                                     <excludes>
                                         <exclude>META-INF/services/org.glassfish.jersey.internal.spi.AutoDiscoverable</exclude>
+                                        <exclude>META-INF/services/org.glassfish.jersey.server.spi.ComponentProvider</exclude>
                                         <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$1.class</exclude>
                                         <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$2$1.class</exclude>
                                         <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$2.class</exclude>

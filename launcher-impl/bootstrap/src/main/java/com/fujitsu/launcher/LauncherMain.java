@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2017-2021 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -25,20 +25,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.glassfish.embeddable.CommandResult;
+import org.glassfish.embeddable.CommandResult.ExitStatus;
+import org.glassfish.embeddable.CommandRunner;
 import org.glassfish.embeddable.GlassFish;
 import org.glassfish.embeddable.GlassFishProperties;
 import org.glassfish.embeddable.GlassFishRuntime;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.internal.api.Globals;
-import org.kohsuke.args4j.CmdLineException;
-import org.kohsuke.args4j.CmdLineParser;
-import org.kohsuke.args4j.Option;
 
+import com.fujitsu.launcher.cli.CommandLineException;
+import com.fujitsu.launcher.cli.LauncherCommandLine;
 import com.sun.enterprise.glassfish.bootstrap.Constants;
 import com.sun.enterprise.module.bootstrap.StartupContext;
 import com.sun.enterprise.server.logging.GFFileHandler;
@@ -49,32 +52,9 @@ import com.sun.enterprise.server.logging.GFFileHandler;
  */
 public class LauncherMain {
 
-    @Option(name = "--config-file")
-    private String configFile;
-
-    @Option(name = "--http-listener")
-    private int httpListener = 8080;
-
-    @Option(name = "--https-listener")
-    private int httpsListener = 8181;
-
-    @Option(name = "--deploy")
-    private String inputWar;
-
-    @Option(name = "--contextroot")
-    private String contextRoot = "";
-
-    @Option(name = "--libraries")
-    private String libraries;
-
-    @Option(name = "--generate")
-    private String outputJar;
-
-    @Option(name = "--force")
-    private boolean isForce = false;
-
     private GlassFishProperties glassfishProperties = new GlassFishProperties();
     private DeployProperties deployProperties = new DeployProperties();
+    private LauncherConfig config;
 
     /**
      * @param args the command line arguments
@@ -85,44 +65,58 @@ public class LauncherMain {
 
     private LauncherMain(String[] args) {
         try {
-            new CmdLineParser(this).parseArgument(args);
-        } catch (CmdLineException ex) {
+            config = new LauncherCommandLine().parseCommandLine(args);
+        } catch (CommandLineException ex) {
             throw new IllegalArgumentException(ex);
         }
-        if (inputWar == null) {
-            throw new IllegalArgumentException("No --deploy is given.");
-        }
 
+        String configFile = config.getConfigFile();
         if (configFile != null) {
             glassfishProperties.setConfigFileReadOnly(true);
-            if (outputJar == null) {
+            if (config.getGenerate() == null) {
                 glassfishProperties.setConfigFileURI(new File(configFile).toURI().normalize().toString());
             }
         } else {
             glassfishProperties.setConfigFileReadOnly(false);
-            glassfishProperties.setPort("http-listener", httpListener);
-            glassfishProperties.setPort("https-listener", httpsListener);
+            glassfishProperties.setPort("http-listener", config.getHttpListener());
+            glassfishProperties.setPort("https-listener", config.getHttpsListener());
         }
 
+        String contextRoot = config.getContextRoot();
         if (contextRoot != null) {
             deployProperties.setContextRoot(contextRoot);
         }
+
+        String libraries = config.getLibraries();
         if (libraries != null) {
             deployProperties.setLibraries(libraries);
         }
+
+        deployProperties.setPrecompilejsp(config.isPrecompilejsp());
     }
 
     private void start() {
-        if (outputJar != null) {
+        switch (config.getOperation()) {
+        case GENERATE:
             generate();
-        } else {
+            break;
+        case DEPLOY:
             launch();
+            break;
+        case EXECUTE:
+            execute();
+            break;
+        default:
+            throw new IllegalStateException("Unsupported operation: " + config.getOperation());
         }
     }
 
     private void generate() {
         try {
-            if (isForce) {
+            String outputJar = config.getGenerate();
+            String configFile = config.getConfigFile();
+
+            if (config.isForce()) {
                 Files.deleteIfExists(Paths.get(outputJar));
             }
             Files.copy(getTemplate(), Paths.get(outputJar));
@@ -132,7 +126,7 @@ public class LauncherMain {
             URI uri = URI.create("jar:" + new File(outputJar).toURI()).normalize();
             try (
                     FileSystem zipfs = FileSystems.newFileSystem(uri, env);
-                    InputStream wis = new FileInputStream(inputWar);
+                    InputStream wis = new FileInputStream(config.getDeploy());
                     BufferedWriter gbw = Files.newBufferedWriter(zipfs.getPath("uber-jar_glassfish.properties"));
                     BufferedWriter dbw = Files.newBufferedWriter(zipfs.getPath("uber-jar_deploy.properties"));
                     InputStream mis = this.getClass().getClassLoader().getResourceAsStream("com/fujitsu/launcher/uber-jar_MANIFEST.MF")) {
@@ -155,11 +149,13 @@ public class LauncherMain {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Uber-jar can't be generated.", th);
             System.exit(1);
         }
-        Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Uber-jar was generated. {0}", outputJar);
+        Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Uber-jar was generated. {0}", config.getGenerate());
     }
 
     private void launch() {
         try {
+            initProductName();
+
             Thread preInitShutdownHook = createPreInitShutdownHook();
             Runtime.getRuntime().addShutdownHook(preInitShutdownHook);
 
@@ -170,7 +166,66 @@ public class LauncherMain {
             Runtime.getRuntime().removeShutdownHook(preInitShutdownHook);
 
             glassfish.start();
-            glassfish.getDeployer().deploy(new File(inputWar), deployProperties.getDeployOptions());
+            glassfish.getDeployer().deploy(new File(config.getDeploy()), deployProperties.getDeployOptions());
+        } catch (Throwable th) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Server was stopped.", th);
+            cleanInstanceRoot();
+            System.exit(1);
+        }
+    }
+
+    private void execute() {
+        try {
+            initProductName();
+
+            Thread preInitShutdownHook = createPreInitShutdownHook();
+            Runtime.getRuntime().addShutdownHook(preInitShutdownHook);
+
+            GlassFish glassfish = GlassFishRuntime.bootstrap().newGlassFish(glassfishProperties);
+
+            Thread postInitShutdownHook = createPostInitShutdownHook(glassfish);
+            Runtime.getRuntime().addShutdownHook(postInitShutdownHook);
+            Runtime.getRuntime().removeShutdownHook(preInitShutdownHook);
+
+            glassfish.start();
+
+            String subcommand = config.getExecute();
+            List<String> subcommandArgs = config.getSubcommandArguments();
+
+            Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Command executed: " + subcommand + " " + String.join(" ", subcommandArgs));
+
+            CommandRunner cmdRunner = glassfish.getCommandRunner();
+            CommandResult cmdResult = cmdRunner.run(subcommand, subcommandArgs.toArray(new String[0]));
+            ExitStatus exitStatus = cmdResult.getExitStatus();
+            Throwable failureCause = cmdResult.getFailureCause();
+
+            Level logLevel;
+            if (exitStatus.equals(ExitStatus.SUCCESS)) {
+                logLevel = Level.INFO;
+            } else if (exitStatus.equals(ExitStatus.WARNING)) {
+                logLevel = Level.WARNING;
+            } else {
+                logLevel = Level.SEVERE;
+            }
+
+            Logger.getLogger(this.getClass().getName()).log(logLevel, "Command status: " + exitStatus);
+            Logger.getLogger(this.getClass().getName()).log(logLevel, "Command output: " + cmdResult.getOutput());
+
+            if (failureCause != null) {
+                Logger.getLogger(this.getClass().getName()).log(logLevel,
+                        "Command failure cause: " + ExceptionUtil.toStackStaceString(failureCause));
+            }
+
+            if (exitStatus == ExitStatus.SUCCESS) {
+                Logger.getLogger(this.getClass().getName()).log(logLevel, "Command " + subcommand + " executed successfully.");
+                System.exit(0); // shutdown hook will stop and dispose glassfish
+            } else if (exitStatus == ExitStatus.WARNING) {
+                Logger.getLogger(this.getClass().getName()).log(logLevel, "Command " + subcommand + " completed with warnings.");
+                System.exit(0);
+            } else {
+                Logger.getLogger(this.getClass().getName()).log(logLevel, "Command " + subcommand + " failed.");
+                System.exit(1);
+            }
         } catch (Throwable th) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Server was stopped.", th);
             cleanInstanceRoot();
@@ -186,6 +241,12 @@ public class LauncherMain {
         }
         JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
         return Paths.get(jarURLConnection.getJarFile().getName());
+    }
+
+    private void initProductName() {
+        if (System.getProperty("product.name") == null) {
+            System.setProperty("product.name", "");
+        }
     }
 
     public static Thread createPreInitShutdownHook() {

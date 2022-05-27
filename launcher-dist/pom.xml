@@ -159,6 +159,7 @@
                                         <exclude>org/glassfish/deployment/admin/DeployCommand.class</exclude>
                                         <exclude>org/glassfish/deployment/admin/DeployCommand$Interceptor.class</exclude>
                                         <exclude>org/glassfish/embed/domain.xml</exclude>
+                                        <exclude>org/glassfish/web/embed/default-web.xml</exclude>
                                     </excludes>
                                 </filter>
                                 <filter>

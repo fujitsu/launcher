@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2010, 2018 Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2019 Fujitsu Limited.
+ * Copyright (c) 2019-2021 Fujitsu Limited.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -177,6 +177,13 @@ public class StaticGlassFishRuntime extends GlassFishRuntime {
                 installRoot.getAbsolutePath());
         gfProps.getProperties().setProperty(Constants.INSTALL_ROOT_URI_PROP_NAME,
                 installRoot.toURI().toString());
+
+        String loginConfig = System.getProperty("java.security.auth.login.config");
+        if (loginConfig == null) {
+            File instanceConfigDir = new File(instanceRoot, "config");
+            File loginConfigFile = new File(instanceConfigDir, "login.conf");
+            System.setProperty("java.security.auth.login.config", loginConfigFile.getAbsolutePath());
+        }
     }
 
     private String createTempInstanceRoot(GlassFishProperties gfProps)

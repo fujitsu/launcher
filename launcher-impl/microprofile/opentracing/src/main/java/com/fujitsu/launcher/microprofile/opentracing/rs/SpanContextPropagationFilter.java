@@ -16,8 +16,6 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 
 import io.opentracing.SpanContext;
-//import io.opentracing.contrib.jaxrs2.client.ClientTracingFilter;
-//import io.opentracing.contrib.jaxrs2.client.TracingProperties;
 
 /**
  * Client request filter to propagate a span context to child spans.

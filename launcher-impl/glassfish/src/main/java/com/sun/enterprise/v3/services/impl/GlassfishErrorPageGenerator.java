@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013, 2018 Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021 Fujitsu Limited.
+ * Copyright (c) 2021, 2022 Fujitsu Limited.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -30,7 +30,7 @@ public class GlassfishErrorPageGenerator implements ErrorPageGenerator {
     public String generate(final Request request, final int status,
             final String reasonPhrase, final String description,
             final Throwable exception) {
-        
+
         String serverInfo = System.getProperty("product.name");
         String serverVersion = serverInfo != null ? serverInfo : Version.getVersion();
 
@@ -39,7 +39,7 @@ public class GlassfishErrorPageGenerator implements ErrorPageGenerator {
                     "The requested resource is not available.", "404");
         } else {
             return HttpUtils.getErrorPage(serverVersion,
-                    "The server encountered an internal error that prevented it from fulfilling this request.", "500");
+                    "The server encountered an internal error that prevented it from fulfilling this request.", String.valueOf(status));
         }
    }
 }

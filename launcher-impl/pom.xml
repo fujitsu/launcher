@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Copyright (c) 2017-2019 Fujitsu Limited and/or its affiliates. All rights
+    Copyright (c) 2017-2022 Fujitsu Limited and/or its affiliates. All rights
     reserved.
 
     This program and the accompanying materials are made available under the
@@ -21,7 +21,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>hk2-asm</module>
         <module>glassfish</module>
         <module>microprofile</module>
         <module>bootstrap</module>

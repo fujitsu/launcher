@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2019-2022 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,9 +12,9 @@ package com.fujitsu.launcher.microprofile.opentracing.rs;
 
 import java.util.concurrent.ExecutorService;
 
-import javax.enterprise.inject.spi.CDI;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.client.ClientBuilder;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.client.ClientBuilder;
 
 import org.eclipse.microprofile.opentracing.ClientTracingRegistrarProvider;
 import org.glassfish.jersey.client.JerseyClientBuilder;

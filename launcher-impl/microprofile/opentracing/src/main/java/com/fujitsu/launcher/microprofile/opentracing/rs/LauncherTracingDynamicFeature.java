@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2019-2022 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -17,10 +17,12 @@ package com.fujitsu.launcher.microprofile.opentracing.rs;
 import java.util.Optional;
 import java.util.logging.Logger;
 
-import javax.ws.rs.container.DynamicFeature;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.FeatureContext;
-import javax.ws.rs.ext.Provider;
+import io.smallrye.opentracing.contrib.jaxrs2.server.OperationNameProvider;
+import io.smallrye.opentracing.contrib.jaxrs2.server.ServerTracingDynamicFeature;
+import jakarta.ws.rs.container.DynamicFeature;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.FeatureContext;
+import jakarta.ws.rs.ext.Provider;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -28,10 +30,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import com.fujitsu.launcher.microprofile.opentracing.cdi.TracerProducer;
 
 import io.opentracing.Tracer;
-import io.opentracing.contrib.jaxrs2.server.OperationNameProvider.ClassNameOperationName;
-import io.opentracing.contrib.jaxrs2.server.OperationNameProvider.WildcardOperationName;
-import io.opentracing.contrib.jaxrs2.server.ServerTracingDynamicFeature;
-import io.opentracing.contrib.jaxrs2.server.ServerTracingDynamicFeature.Builder;
+
 
 /**
  * Patched version of {@link io.smallrye.opentracing.SmallRyeTracingDynamicFeature}.
@@ -53,15 +52,15 @@ public class LauncherTracingDynamicFeature implements DynamicFeature {
         Optional<String> operationNameProvider = config.getOptionalValue("mp.opentracing.server.operation-name-provider",
                 String.class);
 
-        Builder builder = new Builder(tracer)
-                .withOperationNameProvider(ClassNameOperationName.newBuilder())
+        ServerTracingDynamicFeature.Builder builder = new ServerTracingDynamicFeature.Builder(tracer)
+                .withOperationNameProvider(OperationNameProvider.ClassNameOperationName.newBuilder())
                 .withTraceSerialization(false);
         if (skipPattern.isPresent()) {
             builder.withSkipPattern(skipPattern.get());
         }
         if (operationNameProvider.isPresent()) {
             if ("http-path".equalsIgnoreCase(operationNameProvider.get())) {
-                builder.withOperationNameProvider(WildcardOperationName.newBuilder());
+                builder.withOperationNameProvider(OperationNameProvider.WildcardOperationName.newBuilder());
             } else if (!"class-method".equalsIgnoreCase(operationNameProvider.get())) {
                 logger.warning("Provided operation name does not match http-path or class-method. Using default class-method.");
             }

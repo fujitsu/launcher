@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2018 Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2019 Fujitsu Limited.
+ * Copyright (c) 2019, 2022 Fujitsu Limited.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -25,7 +25,7 @@ import org.glassfish.api.event.EventListener;
 import org.glassfish.api.event.EventTypes;
 import org.jvnet.hk2.annotations.Service;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -43,7 +43,7 @@ import com.sun.enterprise.loader.ASURLClassLoader;
 import com.sun.logging.LogDomains;
 import java.util.Locale;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 
 /**

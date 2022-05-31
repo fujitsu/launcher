@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2018-2022 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,12 +10,14 @@
  */
 package com.fujitsu.launcher.microprofile.opentracing.rs;
 
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
+import io.smallrye.opentracing.contrib.jaxrs2.client.ClientTracingFilter;
+import io.smallrye.opentracing.contrib.jaxrs2.client.TracingProperties;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 
 import io.opentracing.SpanContext;
-import io.opentracing.contrib.jaxrs2.client.ClientTracingFilter;
-import io.opentracing.contrib.jaxrs2.client.TracingProperties;
+//import io.opentracing.contrib.jaxrs2.client.ClientTracingFilter;
+//import io.opentracing.contrib.jaxrs2.client.TracingProperties;
 
 /**
  * Client request filter to propagate a span context to child spans.

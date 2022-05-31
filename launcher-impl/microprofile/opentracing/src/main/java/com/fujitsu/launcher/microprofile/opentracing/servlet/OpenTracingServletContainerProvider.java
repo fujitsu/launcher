@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2018-2022 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,14 +12,14 @@ package com.fujitsu.launcher.microprofile.opentracing.servlet;
 
 import java.util.Set;
 
-import javax.servlet.FilterRegistration.Dynamic;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
+import io.smallrye.opentracing.contrib.jaxrs2.server.SpanFinishingFilter;
+import jakarta.servlet.FilterRegistration.Dynamic;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.internal.spi.ServletContainerProvider;
 
-import io.opentracing.contrib.jaxrs2.server.SpanFinishingFilter;
 
 /**
  * Servlet container provider for adding {@link SpanFinishingFilter}.

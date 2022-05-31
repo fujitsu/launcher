@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2019, 2021 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022 Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2019, 2021 Payara Foundation and/or its affiliates. All rights reserved.
- * Copyright (c) 2021 Fujitsu Limited.
+ * Copyright (c) 2021, 2022 Fujitsu Limited.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -37,18 +37,20 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Configuration;
-import javax.ws.rs.core.Feature;
-import javax.ws.rs.core.FeatureContext;
-import javax.ws.rs.ext.ParamConverterProvider;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.Feature;
+import jakarta.ws.rs.core.FeatureContext;
+import jakarta.ws.rs.ext.ParamConverterProvider;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -211,8 +213,8 @@ class RestClientBuilderImpl implements RestClientBuilder {
         RestClientModel restClientModel = RestClientModel.from(context);
 
         return (T) Proxy.newProxyInstance(interfaceClass.getClassLoader(),
-                                          new Class[] {interfaceClass, AutoCloseable.class, Closeable.class},
-                                          new ProxyInvocationHandler(client, webTarget, restClientModel)
+                new Class[] {interfaceClass, AutoCloseable.class, Closeable.class},
+                new ProxyInvocationHandler(client, webTarget, restClientModel)
         );
     }
 
@@ -422,7 +424,7 @@ class RestClientBuilderImpl implements RestClientBuilder {
         if (instance instanceof AsyncInvocationInterceptorFactory) {
             asyncInterceptorFactories
                     .add(new AsyncInvocationInterceptorFactoryPriorityWrapper((AsyncInvocationInterceptorFactory) instance,
-                                                                              priority));
+                            priority));
         }
         if (instance instanceof ConnectorProvider) {
             connector = (ConnectorProvider) instance;
@@ -446,13 +448,45 @@ class RestClientBuilderImpl implements RestClientBuilder {
         if (proxyPort <= 0 || proxyPort > 65535) {
             throw new IllegalArgumentException("Invalid proxy port");
         }
-        property(ClientProperties.PROXY_URI, "http://" + proxyHost + ":" + proxyPort);
+
+        // If proxyString is something like "localhost:8765" we need to add a scheme since the connectors expect one
+        String proxyString = createProxyString(proxyHost, proxyPort);
+
+        property(ClientProperties.PROXY_URI, proxyString);
         return this;
+    }
+
+    static String createProxyString(String proxyHost, int proxyPort) {
+        boolean prependScheme = false;
+        String proxyString = proxyHost + ":" + proxyPort;
+
+        if (proxyString.split(":").length == 2) {
+            // Check if first character is a number to account for if proxyHost is given as an IP rather than a name
+            // URI.create("127.0.0.1:8765") will lead to an IllegalArgumentException
+            if (proxyString.matches("\\d.*")) {
+                prependScheme = true;
+            } else {
+                // "localhost:8765" will set the scheme as "localhost" and the host as "null"
+                URI proxyURI = URI.create(proxyString);
+                if (proxyURI.getHost() == null && proxyURI.getScheme().equals(proxyHost)) {
+                    prependScheme = true;
+                }
+            }
+        }
+
+        if (prependScheme) {
+            proxyString = "http://" + proxyString;
+            Logger.getLogger(RestClientBuilderImpl.class.getName()).log(Level.FINE,
+                    "No scheme provided with proxyHost: " + proxyHost + ". Defaulting to HTTP, proxy address = "
+                            + proxyString);
+        }
+
+        return proxyString;
     }
 
     @Override
     public RestClientBuilder queryParamStyle(QueryParamStyle queryParamStyle) {
-         if (queryParamStyle != null) {
+        if (queryParamStyle != null) {
             property(ClientProperties.QUERY_PARAM_STYLE,
                     JerseyQueryParamStyle.valueOf(queryParamStyle.toString()));
         }

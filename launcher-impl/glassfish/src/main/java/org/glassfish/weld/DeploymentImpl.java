@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2009, 2018 Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2019 Fujitsu Limited.
+ * Copyright (c) 2009, 2020 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022 Fujitsu Limited.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -14,45 +14,70 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  */
+
 package org.glassfish.weld;
 
+import static com.sun.enterprise.util.Utility.isAnyEmpty;
+import static com.sun.enterprise.util.Utility.isAnyNull;
+import static com.sun.enterprise.util.Utility.isEmpty;
+import static java.util.Collections.emptyList;
 import static java.util.logging.Level.FINE;
-import static org.glassfish.weld.connector.WeldUtils.*;
+import static org.glassfish.cdi.CDILoggerInfo.CREATING_DEPLOYMENT_ARCHIVE;
+import static org.glassfish.cdi.CDILoggerInfo.EXCEPTION_SCANNING_JARS;
+import static org.glassfish.cdi.CDILoggerInfo.GET_BEAN_DEPLOYMENT_ARCHIVES;
+import static org.glassfish.cdi.CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE;
+import static org.glassfish.cdi.CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_NEW_BDA_TO_ROOTS;
+import static org.glassfish.cdi.CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_TO_EXISTING;
+import static org.glassfish.cdi.CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE_CHECKING;
+import static org.glassfish.cdi.CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE_CHECKING_SUBBDA;
+import static org.glassfish.cdi.CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE_CREATE_NEW_BDA;
+import static org.glassfish.cdi.CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE_RETURNING_NEWLY_CREATED_BDA;
+import static org.glassfish.deployment.common.InstalledLibrariesResolver.getInstalledLibraries;
+import static org.glassfish.weld.WeldDeployer.WELD_BOOTSTRAP;
+import static org.glassfish.weld.connector.WeldUtils.JAR_SUFFIX;
+import static org.glassfish.weld.connector.WeldUtils.META_INF_BEANS_XML;
+import static org.glassfish.weld.connector.WeldUtils.SEPARATOR_CHAR;
+import static org.glassfish.weld.connector.WeldUtils.isImplicitBeanArchive;
+import static org.jboss.weld.bootstrap.spi.BeanDiscoveryMode.NONE;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.jar.Attributes;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarFile;
 import java.util.logging.Logger;
 
-import javax.enterprise.inject.spi.Extension;
-
-import com.sun.enterprise.deploy.shared.ArchiveFactory;
-
 import org.glassfish.api.deployment.DeployCommandParameters;
 import org.glassfish.api.deployment.DeploymentContext;
 import org.glassfish.api.deployment.archive.ReadableArchive;
 import org.glassfish.cdi.CDILoggerInfo;
 import org.glassfish.deployment.common.DeploymentContextImpl;
-import org.glassfish.deployment.common.InstalledLibrariesResolver;
 import org.glassfish.javaee.core.deployment.ApplicationHolder;
-import org.glassfish.weld.connector.WeldUtils;
 import org.glassfish.weld.connector.WeldUtils.BDAType;
 import org.jboss.weld.bootstrap.WeldBootstrap;
 import org.jboss.weld.bootstrap.api.ServiceRegistry;
 import org.jboss.weld.bootstrap.api.helpers.SimpleServiceRegistry;
 import org.jboss.weld.bootstrap.spi.BeanDeploymentArchive;
-import org.jboss.weld.bootstrap.spi.BeanDiscoveryMode;
 import org.jboss.weld.bootstrap.spi.BeansXml;
 import org.jboss.weld.bootstrap.spi.CDI11Deployment;
 import org.jboss.weld.bootstrap.spi.Metadata;
 
+import com.sun.enterprise.deploy.shared.ArchiveFactory;
 import com.sun.enterprise.deployment.EjbDescriptor;
+
+import jakarta.enterprise.inject.spi.Extension;
 
 /*
  * Represents a deployment of a CDI (Weld) application.
@@ -63,18 +88,18 @@ public class DeploymentImpl implements CDI11Deployment {
     private List<RootBeanDeploymentArchive> rarRootBdas;
     private List<RootBeanDeploymentArchive> ejbRootBdas;
     private List<RootBeanDeploymentArchive> warRootBdas;
-    private List<RootBeanDeploymentArchive> libJarRootBdas = null;
+    private List<RootBeanDeploymentArchive> libJarRootBdas;
 
-    private List<BeanDeploymentArchive> beanDeploymentArchives = null;
+    private List<BeanDeploymentArchive> beanDeploymentArchives;
     private DeploymentContext context;
 
-    // A convenience Map to get BDA for a given BDA ID
+    // A convenience Map to get a BeanDeploymentArchive for a given BeanDeploymentArchive ID
     private Map<String, BeanDeploymentArchive> idToBeanDeploymentArchive = new HashMap<>();
     private SimpleServiceRegistry simpleServiceRegistry = null;
 
     private Logger logger = CDILoggerInfo.getLogger();
 
-    // holds BDA's created for extensions
+    // Holds BeanDeploymentArchives created for extensions
     private Map<ClassLoader, BeanDeploymentArchive> extensionBDAMap = new HashMap<>();
 
     private Iterable<Metadata<Extension>> extensions;
@@ -82,73 +107,239 @@ public class DeploymentImpl implements CDI11Deployment {
     private Collection<EjbDescriptor> deployedEjbs = new LinkedList<>();
     private ArchiveFactory archiveFactory;
 
-    private boolean earContextAppLibBdasProcessed = false;
-
-    private String appName;
+    private boolean earContextAppLibBdasProcessed;
 
     /**
-     * Produce <code>BeanDeploymentArchive</code>s for this <code>Deployment</code>
-     * from information from the provided <code>ReadableArchive</code>.
+     * Produce <code>BeanDeploymentArchive</code>s for this <code>Deployment</code> from information from the provided
+     * <code>ReadableArchive</code>.
      */
-    public DeploymentImpl(ReadableArchive archive,
-                          Collection<EjbDescriptor> ejbs,
-                          DeploymentContext context,
-                          ArchiveFactory archiveFactory) {
-        if ( logger.isLoggable( FINE ) ) {
-            logger.log(FINE, CDILoggerInfo.CREATING_DEPLOYMENT_ARCHIVE, new Object[]{ archive.getName()});
+    public DeploymentImpl(ReadableArchive archive, Collection<EjbDescriptor> ejbs, DeploymentContext context, ArchiveFactory archiveFactory) {
+        if (logger.isLoggable(FINE)) {
+            logger.log(FINE, CREATING_DEPLOYMENT_ARCHIVE, new Object[] { archive.getName() });
         }
+
         this.archiveFactory = archiveFactory;
-        this.beanDeploymentArchives = new ArrayList<BeanDeploymentArchive>();
+        this.beanDeploymentArchives = new ArrayList<>();
         this.context = context;
 
         // Collect /lib Jar BDAs (if any) from the parent module.
         // If we've produced BDA(s) from any /lib jars, <code>return</code> as
         // additional BDA(s) will be produced for any subarchives (war/jar).
         libJarRootBdas = scanForLibJars(archive, ejbs, context);
-        if ((libJarRootBdas != null) && libJarRootBdas.size() > 0) {
+        if (!isEmpty(libJarRootBdas)) {
             return;
         }
 
         createModuleBda(archive, ejbs, context);
-
-        ApplicationHolder holder = context.getModuleMetaData(ApplicationHolder.class);
-        if ((holder != null) && (holder.app != null)) {
-            appName = holder.app.getAppName();
-        } else {
-            appName = "CDIApp";
-        }
     }
 
-    private void addBeanDeploymentArchives(RootBeanDeploymentArchive bda) {
-        BDAType moduleBDAType = bda.getModuleBDAType();
-        if (moduleBDAType.equals(BDAType.WAR)) {
-            if (warRootBdas == null) {
-                warRootBdas = new ArrayList<>();
-            }
-            warRootBdas.add(bda);
-        } else if (moduleBDAType.equals(BDAType.JAR)) {
-            if (ejbRootBdas == null) {
-                ejbRootBdas = new ArrayList<>();
-            }
-            ejbRootBdas.add(bda);
-        } else if (moduleBDAType.equals(BDAType.RAR)) {
-            if (rarRootBdas == null) {
-                rarRootBdas = new ArrayList<>();
-            }
-            rarRootBdas.add(bda);
+    @Override
+    public BeanDeploymentArchive loadBeanDeploymentArchive(Class<?> beanClass) {
+        if (logger.isLoggable(FINE)) {
+            logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE, new Object[] { beanClass });
         }
+
+        // Check if we have already created a bean archive for this bean class, and if so return it.
+
+        for (BeanDeploymentArchive beanDeploymentArchive : beanDeploymentArchives) {
+            if (logger.isLoggable(FINE)) {
+                logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_CHECKING, new Object[] { beanClass, beanDeploymentArchive.getId() });
+            }
+
+            if (((BeanDeploymentArchiveImpl) beanDeploymentArchive).getModuleBeanClasses().contains(beanClass.getName())) {
+
+                // Don't stuff this Bean Class into the BeanDeploymentArchive's beanClasses,
+                // as Weld automatically add theses classes to the BeanDeploymentArchive's bean Classes
+                if (logger.isLoggable(FINE)) {
+                    logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_TO_EXISTING, new Object[] { beanClass.getName(), beanDeploymentArchive });
+                }
+
+                return beanDeploymentArchive;
+            }
+
+            // XXX: As of now, we handle one-level. Ideally, a bean deployment
+            // descriptor is a composite and we should be able to search the tree
+            // and get the right BDA for the beanClass
+            if (!beanDeploymentArchive.getBeanDeploymentArchives().isEmpty()) {
+                for (BeanDeploymentArchive subBeanDeploymentArchive : beanDeploymentArchive.getBeanDeploymentArchives()) {
+                    Collection<String> moduleBeanClassNames = ((BeanDeploymentArchiveImpl) subBeanDeploymentArchive).getModuleBeanClasses();
+                    if (logger.isLoggable(FINE)) {
+                        logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_CHECKING_SUBBDA,
+                                new Object[] { beanClass, subBeanDeploymentArchive.getId() });
+                    }
+
+                    if (moduleBeanClassNames.contains(beanClass.getName())) {
+
+                        // Don't stuff this Bean Class into the BeanDeploymentArchive's beanClasses,
+                        // as Weld automatically add theses classes to the BeanDeploymentArchive's bean Classes
+                        if (logger.isLoggable(FINE)) {
+                            logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_TO_EXISTING,
+                                    new Object[] { beanClass.getName(), subBeanDeploymentArchive });
+                        }
+
+                        return subBeanDeploymentArchive;
+                    }
+                }
+            }
+        }
+
+        BeanDeploymentArchive extensionBeanDeploymentArchive = extensionBDAMap.get(beanClass.getClassLoader());
+        if (extensionBeanDeploymentArchive != null) {
+            return extensionBeanDeploymentArchive;
+        }
+
+        // If the beanDeploymentArchive was not found for the Class, create one and add it
+
+        if (logger.isLoggable(FINE)) {
+            logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_CREATE_NEW_BDA, new Object[] { beanClass });
+        }
+
+        BeanDeploymentArchive newBeanDeploymentArchive =
+            new BeanDeploymentArchiveImpl(
+                beanClass.getName(),
+                new ArrayList<>(List.of(beanClass)),
+                new CopyOnWriteArrayList<>(),
+                new HashSet<>(),
+                context);
+
+        // If bean.xml explicitly says to ignore this archive, return
+        // without adding the bean archive
+
+        BeansXml beansXml = newBeanDeploymentArchive.getBeansXml();
+        if (beansXml != null && beansXml.getBeanDiscoveryMode().equals(NONE)) {
+            return null;
+        }
+
+        // Add the new BeanDeploymentArchive to all root BeanDeploymentArchives of this deployment.
+
+        if (logger.isLoggable(FINE)) {
+            logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_NEW_BDA_TO_ROOTS, new Object[] {});
+        }
+
+        for (BeanDeploymentArchive beanDeploymentArchive : beanDeploymentArchives) {
+            beanDeploymentArchive.getBeanDeploymentArchives().add(newBeanDeploymentArchive);
+        }
+
+        if (logger.isLoggable(FINE)) {
+            logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_RETURNING_NEWLY_CREATED_BDA,
+                    new Object[] { beanClass, newBeanDeploymentArchive });
+        }
+
+        beanDeploymentArchives.add(newBeanDeploymentArchive);
+        idToBeanDeploymentArchive.put(newBeanDeploymentArchive.getId(), newBeanDeploymentArchive);
+        extensionBDAMap.put(beanClass.getClassLoader(), newBeanDeploymentArchive);
+
+        return newBeanDeploymentArchive;
+    }
+
+    @Override
+    public ServiceRegistry getServices() {
+        if (simpleServiceRegistry == null) {
+            simpleServiceRegistry = new SimpleServiceRegistry();
+        }
+
+        return simpleServiceRegistry;
+    }
+
+    @Override
+    public Iterable<Metadata<Extension>> getExtensions() {
+        if (extensions != null) {
+            return extensions;
+        }
+
+        List<Metadata<Extension>> extensionsList = new ArrayList<>();
+        for (BeanDeploymentArchive beanDeploymentArchive : getBeanDeploymentArchives()) {
+            if (!(beanDeploymentArchive instanceof RootBeanDeploymentArchive)) {
+                extensions =
+                    context.getTransientAppMetaData(WELD_BOOTSTRAP, WeldBootstrap.class)
+                           .loadExtensions(((BeanDeploymentArchiveImpl) beanDeploymentArchive).getModuleClassLoaderForBDA());
+
+                if (extensions != null) {
+                    for (Metadata<Extension> beanDeploymentArchiveExtension : extensions) {
+                        extensionsList.add(beanDeploymentArchiveExtension);
+                    }
+                }
+            }
+        }
+
+        return extensionsList;
+    }
+
+    @Override
+    public List<BeanDeploymentArchive> getBeanDeploymentArchives() {
+        if (logger.isLoggable(FINE)) {
+            logger.log(FINE, GET_BEAN_DEPLOYMENT_ARCHIVES, new Object[] { beanDeploymentArchives });
+        }
+
+        if (!beanDeploymentArchives.isEmpty()) {
+            return beanDeploymentArchives;
+        }
+
+        return emptyList();
     }
 
     /**
-     * Produce <code>BeanDeploymentArchive</code>s for this <code>Deployment</code>
-     * from information from the provided <code>ReadableArchive</code>.
-     * This method is called for subsequent modules after This <code>Deployment</code> has
+     * Get a BeanDeploymentArchive for the specified beanClass
+     *
+     * @param beanClass The beanClass to get the BeanDeploymentArchive for.
+     *
+     * @return If the beanClass is in the archive represented by the BeanDeploymentArchive then return that BeanDeploymentArchive.
+     * Otherwise if the class loader of the beanClass matches the module class loader of any of the root BeanDeploymentArchives
+     * then return that root BeanDeploymentArchive.
+     * Otherwise return null.
+     */
+    @Override
+    public BeanDeploymentArchive getBeanDeploymentArchive(Class<?> beanClass) {
+        if (beanClass == null) {
+            return null;
+        }
+
+        for (BeanDeploymentArchive beanDeploymentArchive : beanDeploymentArchives) {
+            BeanDeploymentArchiveImpl beanDeploymentArchiveImpl = (BeanDeploymentArchiveImpl) beanDeploymentArchive;
+            if (beanDeploymentArchiveImpl.getBeanClassObjects().contains(beanClass)) {
+                return beanDeploymentArchive;
+            }
+        }
+
+        // Find a root BeanDeploymentArchive
+        ClassLoader classLoader = beanClass.getClassLoader();
+
+        RootBeanDeploymentArchive rootBda = findRootBda(classLoader, ejbRootBdas);
+        if (rootBda == null) {
+            rootBda = findRootBda(classLoader, warRootBdas);
+            if (rootBda == null) {
+                rootBda = findRootBda(classLoader, libJarRootBdas);
+                if (rootBda == null) {
+                    rootBda = findRootBda(classLoader, rarRootBdas);
+                }
+            }
+        }
+
+        return rootBda;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder valBuff = new StringBuilder();
+        for (BeanDeploymentArchive bda : getBeanDeploymentArchives()) {
+            valBuff.append(bda.toString());
+        }
+
+        return valBuff.toString();
+    }
+
+
+    // #### Public methods
+
+    /**
+     * Produce <code>BeanDeploymentArchive</code>s for this <code>Deployment</code> from information from the provided
+     * <code>ReadableArchive</code>. This method is called for subsequent modules after This <code>Deployment</code> has
      * been created.
      */
     public void scanArchive(ReadableArchive archive, Collection<EjbDescriptor> ejbs, DeploymentContext context) {
         if (libJarRootBdas == null) {
             libJarRootBdas = scanForLibJars(archive, ejbs, context);
-            if ((libJarRootBdas != null) && libJarRootBdas.size() > 0) {
+            if (!isEmpty(libJarRootBdas)) {
                 return;
             }
         }
@@ -158,9 +349,8 @@ public class DeploymentImpl implements CDI11Deployment {
     }
 
     /**
-     * Build the accessibility relationship between <code>BeanDeploymentArchive</code>s
-     * for this <code>Deployment</code>.  This method must be called after all <code>Weld</code>
-     * <code>BeanDeploymentArchive</code>s have been produced for the
+     * Build the accessibility relationship between <code>BeanDeploymentArchive</code>s for this <code>Deployment</code>.
+     * This method must be called after all <code>Weld</code> <code>BeanDeploymentArchive</code>s have been produced for the
      * <code>Deployment</code>.
      */
     public void buildDeploymentGraph() {
@@ -223,10 +413,9 @@ public class DeploymentImpl implements CDI11Deployment {
         // If there are any application (/lib) jars, make them accessible
 
         if (warRootBdas != null) {
-            ListIterator<RootBeanDeploymentArchive> warIter = warRootBdas.listIterator();
             boolean modifiedArchive = false;
-            while (warIter.hasNext()) {
-                RootBeanDeploymentArchive warRootBda = warIter.next();
+            for (RootBeanDeploymentArchive warRootBda : warRootBdas) {
+
                 BeanDeploymentArchive warModuleBda = warRootBda.getModuleBda();
                 if (ejbRootBdas != null) {
                     for (RootBeanDeploymentArchive ejbRootBda : ejbRootBdas) {
@@ -236,12 +425,12 @@ public class DeploymentImpl implements CDI11Deployment {
                         warModuleBda.getBeanDeploymentArchives().add(ejbRootBda);
                         warModuleBda.getBeanDeploymentArchives().add(ejbModuleBda);
 
-                       for ( BeanDeploymentArchive oneBda : warModuleBda.getBeanDeploymentArchives() ) {
-                         oneBda.getBeanDeploymentArchives().add( ejbRootBda );
-                         oneBda.getBeanDeploymentArchives().add( ejbModuleBda );
-                       }
+                        for (BeanDeploymentArchive oneBda : warModuleBda.getBeanDeploymentArchives()) {
+                            oneBda.getBeanDeploymentArchives().add(ejbRootBda);
+                            oneBda.getBeanDeploymentArchives().add(ejbModuleBda);
+                        }
 
-                      modifiedArchive = true;
+                        modifiedArchive = true;
                     }
                 }
 
@@ -254,9 +443,9 @@ public class DeploymentImpl implements CDI11Deployment {
                         warModuleBda.getBeanDeploymentArchives().add(libJarRootBda);
                         warModuleBda.getBeanDeploymentArchives().add(libJarModuleBda);
 
-                        for ( BeanDeploymentArchive oneBda : warModuleBda.getBeanDeploymentArchives() ) {
-                          oneBda.getBeanDeploymentArchives().add( libJarRootBda );
-                          oneBda.getBeanDeploymentArchives().add( libJarModuleBda );
+                        for (BeanDeploymentArchive oneBda : warModuleBda.getBeanDeploymentArchives()) {
+                            oneBda.getBeanDeploymentArchives().add(libJarRootBda);
+                            oneBda.getBeanDeploymentArchives().add(libJarModuleBda);
                         }
 
                         modifiedArchive = true;
@@ -272,12 +461,12 @@ public class DeploymentImpl implements CDI11Deployment {
                         warModuleBda.getBeanDeploymentArchives().add(rarRootBda);
                         warModuleBda.getBeanDeploymentArchives().add(rarModuleBda);
 
-                      for ( BeanDeploymentArchive oneBda : warModuleBda.getBeanDeploymentArchives() ) {
-                        oneBda.getBeanDeploymentArchives().add( rarRootBda );
-                        oneBda.getBeanDeploymentArchives().add( rarModuleBda );
-                      }
+                        for (BeanDeploymentArchive oneBda : warModuleBda.getBeanDeploymentArchives()) {
+                            oneBda.getBeanDeploymentArchives().add(rarRootBda);
+                            oneBda.getBeanDeploymentArchives().add(rarModuleBda);
+                        }
 
-                      modifiedArchive = true;
+                        modifiedArchive = true;
                     }
                 }
 
@@ -295,192 +484,20 @@ public class DeploymentImpl implements CDI11Deployment {
         addDependentBdas();
     }
 
-    private void addDependentBdas() {
-        Set<BeanDeploymentArchive> additionalBdas = new HashSet<BeanDeploymentArchive>();
-        for ( BeanDeploymentArchive oneBda : beanDeploymentArchives ) {
-            BeanDeploymentArchiveImpl beanDeploymentArchiveImpl = ( BeanDeploymentArchiveImpl ) oneBda;
-            Collection<BeanDeploymentArchive> subBdas = beanDeploymentArchiveImpl.getBeanDeploymentArchives();
-            for (BeanDeploymentArchive subBda : subBdas) {
-                if ( subBda.getBeanClasses().size() > 0 ) {
-                    // only add it if it's cdi-enabled (contains at least one bean that is managed by cdi)
-                    additionalBdas.add(subBda);
-                }
-            }
-        }
-
-        for ( BeanDeploymentArchive oneBda : additionalBdas ) {
-            if ( ! beanDeploymentArchives.contains( oneBda ) ) {
-                beanDeploymentArchives.add( oneBda );
-            }
-        }
-    }
-
-    @Override
-    public List<BeanDeploymentArchive> getBeanDeploymentArchives() {
-        if ( logger.isLoggable( FINE ) ) {
-            logger.log(FINE, CDILoggerInfo.GET_BEAN_DEPLOYMENT_ARCHIVES, new Object[] {beanDeploymentArchives});
-        }
-        if (!beanDeploymentArchives.isEmpty()) {
-            return beanDeploymentArchives;
-        }
-        return Collections.emptyList();
-    }
-
-    @Override
-    public BeanDeploymentArchive loadBeanDeploymentArchive(Class<?> beanClass) {
-        if ( logger.isLoggable( FINE ) ) {
-            logger.log(FINE, CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE, new Object[] { beanClass });
-        }
-        List<BeanDeploymentArchive> beanDeploymentArchives = getBeanDeploymentArchives();
-
-        ListIterator<BeanDeploymentArchive> lIter = beanDeploymentArchives.listIterator();
-        while (lIter.hasNext()) {
-            BeanDeploymentArchive bda = lIter.next();
-            if ( logger.isLoggable( FINE ) ) {
-                logger.log(FINE,
-                           CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE_CHECKING,
-                           new Object[] { beanClass, bda.getId() });
-            }
-            if (((BeanDeploymentArchiveImpl)bda).getModuleBeanClasses().contains(beanClass.getName())) {
-                //don't stuff this Bean Class into the BDA's beanClasses,
-                //as Weld automatically add theses classes to the BDA's bean Classes
-                if ( logger.isLoggable( FINE ) ) {
-                    logger.log(FINE,
-                               CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_TO_EXISTING,
-                               new Object[] {beanClass.getName(), bda });
-                    //((BeanDeploymentArchiveImpl)bda).addBeanClass(beanClass.getName());
-                }
-                return bda;
-            }
-
-            //XXX: As of now, we handle one-level. Ideally, a bean deployment
-            //descriptor is a composite and we should be able to search the tree
-            //and get the right BDA for the beanClass
-            if (bda.getBeanDeploymentArchives().size() > 0) {
-                for(BeanDeploymentArchive subBda: bda.getBeanDeploymentArchives()){
-                    Collection<String> moduleBeanClassNames = ((BeanDeploymentArchiveImpl)subBda).getModuleBeanClasses();
-                    if ( logger.isLoggable( FINE ) ) {
-                        logger.log(FINE,
-                                   CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE_CHECKING_SUBBDA,
-                                   new Object[] {beanClass, subBda.getId()});
-                    }
-                    boolean match = moduleBeanClassNames.contains(beanClass.getName());
-                    if (match) {
-                        //don't stuff this Bean Class into the BDA's beanClasses,
-                        //as Weld automatically add theses classes to the BDA's bean Classes
-                        if ( logger.isLoggable( FINE ) ) {
-                            logger.log(FINE,
-                                       CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_TO_EXISTING,
-                                       new Object[]{ beanClass.getName(), subBda});
-                        }
-                        //((BeanDeploymentArchiveImpl)subBda).addBeanClass(beanClass.getName());
-                        return subBda;
-                    }
-                }
-            }
-        }
-
-        BeanDeploymentArchive extensionBDA = extensionBDAMap.get(beanClass.getClassLoader());
-        if ( extensionBDA != null ) {
-            return extensionBDA;
-        }
-
-        // If the BDA was not found for the Class, create one and add it
-        if ( logger.isLoggable( FINE ) ) {
-            logger.log(FINE, CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE_CREATE_NEW_BDA, new Object []{beanClass});
-        }
-        List<Class<?>> beanClasses = new ArrayList<Class<?>>();
-        List<URL> beanXMLUrls = new CopyOnWriteArrayList<URL>();
-        Set<EjbDescriptor> ejbs = new HashSet<EjbDescriptor>();
-        beanClasses.add(beanClass);
-        BeanDeploymentArchive newBda =
-            new BeanDeploymentArchiveImpl(beanClass.getName(),
-                                          beanClasses, beanXMLUrls, ejbs, context);
-        BeansXml beansXml = newBda.getBeansXml();
-        if (beansXml == null || !beansXml.getBeanDiscoveryMode().equals(BeanDiscoveryMode.NONE)) {
-            if ( logger.isLoggable( FINE ) ) {
-                logger.log(FINE,
-                           CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_NEW_BDA_TO_ROOTS,
-                           new Object[] {} );
-            }
-            lIter = beanDeploymentArchives.listIterator();
-            while (lIter.hasNext()) {
-                BeanDeploymentArchive bda = lIter.next();
-                bda.getBeanDeploymentArchives().add(newBda);
-            }
-            if ( logger.isLoggable( FINE ) ) {
-                logger.log(FINE,
-                           CDILoggerInfo.LOAD_BEAN_DEPLOYMENT_ARCHIVE_RETURNING_NEWLY_CREATED_BDA,
-                           new Object[]{beanClass, newBda});
-            }
-            beanDeploymentArchives.add(newBda);
-            idToBeanDeploymentArchive.put(newBda.getId(), newBda);
-            extensionBDAMap.put( beanClass.getClassLoader(), newBda);
-            return newBda;
-        }
-
-        return null;
-    }
-
-    @Override
-    public ServiceRegistry getServices() {
-        if (simpleServiceRegistry == null) {
-            simpleServiceRegistry = new SimpleServiceRegistry();
-        }
-        return simpleServiceRegistry;
-    }
-
-    @Override
-    public Iterable<Metadata<Extension>> getExtensions() {
-        if ( extensions != null ) {
-            return extensions;
-        }
-
-        List<BeanDeploymentArchive> bdas = getBeanDeploymentArchives();
-        ArrayList<Metadata<Extension>> extnList = new ArrayList<Metadata<Extension>>();
-        for ( BeanDeploymentArchive bda : bdas ) {
-            if ( ! ( bda instanceof RootBeanDeploymentArchive ) ) {
-                ClassLoader moduleClassLoader = ( ( BeanDeploymentArchiveImpl ) bda ).getModuleClassLoaderForBDA();
-                extensions = context.getTransientAppMetaData( WeldDeployer.WELD_BOOTSTRAP,
-                                                              WeldBootstrap.class).loadExtensions( moduleClassLoader );
-                if ( extensions != null ) {
-                    for ( Metadata<Extension> bdaExtn : extensions ) {
-                        extnList.add(bdaExtn);
-                    }
-                }
-            }
-        }
-        return extnList;
-    }
-
-    @Override
-    public String toString() {
-        StringBuffer valBuff = new StringBuffer();
-        List<BeanDeploymentArchive> beanDeploymentArchives = getBeanDeploymentArchives();
-        ListIterator<BeanDeploymentArchive> lIter = beanDeploymentArchives.listIterator();
-        while (lIter.hasNext()) {
-            BeanDeploymentArchive bda = lIter.next();
-            valBuff.append(bda.toString());
-        }
-        return valBuff.toString();
-    }
-
-    public BeanDeploymentArchive getBeanDeploymentArchiveForArchive(String archiveId) {
-        return idToBeanDeploymentArchive.get(archiveId);
-    }
-
     public void cleanup() {
         if (ejbRootBdas != null) {
             ejbRootBdas.clear();
         }
+
         if (warRootBdas != null) {
             warRootBdas.clear();
         }
+
         if (libJarRootBdas != null) {
             libJarRootBdas.clear();
         }
 
-        if ( rarRootBdas != null ) {
+        if (rarRootBdas != null) {
             rarRootBdas.clear();
         }
 
@@ -489,33 +506,106 @@ public class DeploymentImpl implements CDI11Deployment {
         }
     }
 
+    public BeanDeploymentArchive getBeanDeploymentArchiveForArchive(String archiveId) {
+        return idToBeanDeploymentArchive.get(archiveId);
+    }
+
+    public Iterator<RootBeanDeploymentArchive> getLibJarRootBdas() {
+        if (libJarRootBdas == null) {
+            return null;
+        }
+
+        return libJarRootBdas.iterator();
+    }
+
+    public Iterator<RootBeanDeploymentArchive> getRarRootBdas() {
+        if (rarRootBdas == null) {
+            return null;
+        }
+
+        return rarRootBdas.iterator();
+    }
+
+    public Collection<EjbDescriptor> getDeployedEjbs() {
+        return deployedEjbs;
+    }
+
+    protected void addDeployedEjbs(Collection<EjbDescriptor> ejbs) {
+        if (ejbs != null) {
+            deployedEjbs.addAll(ejbs);
+        }
+    }
+
+
+
+    // #### Private methods
+
+
+    private void addBeanDeploymentArchives(RootBeanDeploymentArchive bda) {
+        BDAType moduleBDAType = bda.getModuleBDAType();
+        if (moduleBDAType.equals(BDAType.WAR)) {
+            if (warRootBdas == null) {
+                warRootBdas = new ArrayList<>();
+            }
+            warRootBdas.add(bda);
+        } else if (moduleBDAType.equals(BDAType.JAR)) {
+            if (ejbRootBdas == null) {
+                ejbRootBdas = new ArrayList<>();
+            }
+            ejbRootBdas.add(bda);
+        } else if (moduleBDAType.equals(BDAType.RAR)) {
+            if (rarRootBdas == null) {
+                rarRootBdas = new ArrayList<>();
+            }
+            rarRootBdas.add(bda);
+        }
+    }
+
+    private void addDependentBdas() {
+        Set<BeanDeploymentArchive> additionalBdas = new HashSet<>();
+        for (BeanDeploymentArchive oneBda : beanDeploymentArchives) {
+            BeanDeploymentArchiveImpl beanDeploymentArchiveImpl = (BeanDeploymentArchiveImpl) oneBda;
+            Collection<BeanDeploymentArchive> subBdas = beanDeploymentArchiveImpl.getBeanDeploymentArchives();
+            for (BeanDeploymentArchive subBda : subBdas) {
+                if (subBda.getBeanClasses().size() > 0) {
+                    // only add it if it's cdi-enabled (contains at least one bean that is managed by cdi)
+                    additionalBdas.add(subBda);
+                }
+            }
+        }
+
+        for (BeanDeploymentArchive oneBda : additionalBdas) {
+            if (!beanDeploymentArchives.contains(oneBda)) {
+                beanDeploymentArchives.add(oneBda);
+            }
+        }
+    }
+
 
     // This method creates and returns a List of BeanDeploymentArchives for each
     // Weld enabled jar under /lib of an existing Archive.
-    private List<RootBeanDeploymentArchive> scanForLibJars( ReadableArchive archive,
-                                                            Collection<EjbDescriptor> ejbs,
-                                                            DeploymentContext context) {
+    private List<RootBeanDeploymentArchive> scanForLibJars(ReadableArchive archive, Collection<EjbDescriptor> ejbs, DeploymentContext context) {
         List<ReadableArchive> libJars = null;
         ApplicationHolder holder = context.getModuleMetaData(ApplicationHolder.class);
-        if ((holder != null) && (holder.app != null)) {
+        if (holder != null && holder.app != null) {
             String libDir = holder.app.getLibraryDirectory();
-            if (libDir != null && !libDir.isEmpty()) {
+            if (!isEmpty(libDir)) {
                 Enumeration<String> entries = archive.entries(libDir);
                 while (entries.hasMoreElements()) {
                     String entryName = entries.nextElement();
-                    // if a jar is directly in lib dir and not WEB-INF/lib/foo/bar.jar
-                    if (entryName.endsWith(JAR_SUFFIX) &&
-                        entryName.indexOf(SEPARATOR_CHAR, libDir.length() + 1 ) == -1 ) {
+
+                    // If a jar is directly in lib dir and not WEB-INF/lib/foo/bar.jar
+                    if (entryName.endsWith(JAR_SUFFIX) && entryName.indexOf(SEPARATOR_CHAR, libDir.length() + 1) == -1) {
                         try {
                             ReadableArchive jarInLib = archive.getSubArchive(entryName);
-                            if (jarInLib.exists(META_INF_BEANS_XML) || WeldUtils.isImplicitBeanArchive(context, jarInLib)) {
+                            if (jarInLib.exists(META_INF_BEANS_XML) || isImplicitBeanArchive(context, jarInLib)) {
                                 if (libJars == null) {
-                                    libJars = new ArrayList<ReadableArchive>();
+                                    libJars = new ArrayList<>();
                                 }
                                 libJars.add(jarInLib);
                             }
                         } catch (IOException e) {
-                            logger.log(FINE, CDILoggerInfo.EXCEPTION_SCANNING_JARS, new Object[]{e});
+                            logger.log(FINE, EXCEPTION_SCANNING_JARS, new Object[] { e });
                         }
                     }
                 }
@@ -532,43 +622,81 @@ public class DeploymentImpl implements CDI11Deployment {
         return libJarRootBdas;
     }
 
-    private void createLibJarBda(ReadableArchive libJarArchive, Collection<EjbDescriptor> ejbs, String libDir ) {
-        RootBeanDeploymentArchive rootBda =
-            new RootBeanDeploymentArchive(libJarArchive,
-                                          ejbs,
-                                          context,
-                                          libDir + SEPARATOR_CHAR + libJarArchive.getName());
-        createLibJarBda(rootBda);
+    private void createLibJarBda(ReadableArchive libJarArchive, Collection<EjbDescriptor> ejbs, String libDir) {
+        createLibJarBda(
+            new RootBeanDeploymentArchive(
+                libJarArchive, ejbs, context,
+                libDir + SEPARATOR_CHAR + libJarArchive.getName()));
     }
 
     private void createLibJarBda(RootBeanDeploymentArchive rootLibBda) {
         BeanDeploymentArchive libModuleBda = rootLibBda.getModuleBda();
         BeansXml moduleBeansXml = libModuleBda.getBeansXml();
-        if (moduleBeansXml == null || !moduleBeansXml.getBeanDiscoveryMode().equals(BeanDiscoveryMode.NONE)) {
+        if (moduleBeansXml == null || !moduleBeansXml.getBeanDiscoveryMode().equals(NONE)) {
             addBdaToDeploymentBdas(rootLibBda);
             addBdaToDeploymentBdas(libModuleBda);
             if (libJarRootBdas == null) {
                 libJarRootBdas = new ArrayList<>();
             }
 
-            for ( RootBeanDeploymentArchive existingLibJarRootBda : libJarRootBdas) {
-                rootLibBda.getBeanDeploymentArchives().add( existingLibJarRootBda );
-                rootLibBda.getBeanDeploymentArchives().add( existingLibJarRootBda.getModuleBda() );
-                rootLibBda.getModuleBda().getBeanDeploymentArchives().add( existingLibJarRootBda );
-                rootLibBda.getModuleBda().getBeanDeploymentArchives().add( existingLibJarRootBda.getModuleBda() );
+            for (RootBeanDeploymentArchive existingLibJarRootBda : libJarRootBdas) {
+                rootLibBda.getBeanDeploymentArchives().add(existingLibJarRootBda);
+                rootLibBda.getBeanDeploymentArchives().add(existingLibJarRootBda.getModuleBda());
+                rootLibBda.getModuleBda().getBeanDeploymentArchives().add(existingLibJarRootBda);
+                rootLibBda.getModuleBda().getBeanDeploymentArchives().add(existingLibJarRootBda.getModuleBda());
 
-                existingLibJarRootBda.getBeanDeploymentArchives().add( rootLibBda );
-                existingLibJarRootBda.getBeanDeploymentArchives().add( rootLibBda.getModuleBda() );
-                existingLibJarRootBda.getModuleBda().getBeanDeploymentArchives().add( rootLibBda );
-                existingLibJarRootBda.getModuleBda().getBeanDeploymentArchives().add( rootLibBda.getModuleBda() );
+                existingLibJarRootBda.getBeanDeploymentArchives().add(rootLibBda);
+                existingLibJarRootBda.getBeanDeploymentArchives().add(rootLibBda.getModuleBda());
+                existingLibJarRootBda.getModuleBda().getBeanDeploymentArchives().add(rootLibBda);
+                existingLibJarRootBda.getModuleBda().getBeanDeploymentArchives().add(rootLibBda.getModuleBda());
             }
 
             libJarRootBdas.add(rootLibBda);
         }
     }
 
-    private void addBdaToDeploymentBdas( BeanDeploymentArchive bda ) {
-        if ( ! beanDeploymentArchives.contains( bda ) ) {
+    private RootBeanDeploymentArchive findRootBda(ClassLoader classLoader, List<RootBeanDeploymentArchive> rootBdas) {
+        if (isAnyNull(rootBdas, classLoader)) {
+            return null;
+        }
+
+        for (RootBeanDeploymentArchive rootBeanDeploymentArchive : rootBdas) {
+            if (classLoader.equals(rootBeanDeploymentArchive.getModuleClassLoaderForBDA())) {
+                return rootBeanDeploymentArchive;
+            }
+        }
+
+        return null;
+    }
+
+    private void createModuleBda(ReadableArchive archive, Collection<EjbDescriptor> ejbs, DeploymentContext context) {
+        RootBeanDeploymentArchive rootBda = new RootBeanDeploymentArchive(archive, ejbs, context);
+
+        BeanDeploymentArchive moduleBda = rootBda.getModuleBda();
+        BeansXml moduleBeansXml = moduleBda.getBeansXml();
+        if (moduleBeansXml == null || !moduleBeansXml.getBeanDiscoveryMode().equals(NONE)) {
+            addBdaToDeploymentBdas(rootBda);
+            addBdaToDeploymentBdas(moduleBda);
+            addBeanDeploymentArchives(rootBda);
+        }
+
+        // First check if the parent is an ear and if so see if there are app libs defined there.
+        if (!earContextAppLibBdasProcessed && context instanceof DeploymentContextImpl) {
+            DeploymentContextImpl deploymentContext = (DeploymentContextImpl) context;
+            DeploymentContext parentContext = deploymentContext.getParentContext();
+            if (parentContext != null) {
+                processBdasForAppLibs(parentContext.getSource(), parentContext);
+                parentContext.getSource();
+                earContextAppLibBdasProcessed = true;
+            }
+        }
+
+        // then check the module
+        processBdasForAppLibs(archive, context);
+    }
+
+    private void addBdaToDeploymentBdas(BeanDeploymentArchive bda) {
+        if (!beanDeploymentArchives.contains(bda)) {
             beanDeploymentArchives.add(bda);
             idToBeanDeploymentArchive.put(bda.getId(), bda);
         }
@@ -576,40 +704,41 @@ public class DeploymentImpl implements CDI11Deployment {
 
     // These are application libraries that reside outside of the ear.  They are usually specified by entries
     // in the manifest.
-    // to test this put a jar in domains/domain1/lib/applibs and in its manifest make sure it has something like:
+    //
+    // To test this put a jar in domains/domain1/lib/applibs and in its manifest make sure it has something like:
     //                           Extension-Name: com.acme.extlib
     // In a war's manifest put in something like:
     //                           Extension-List: MyExtLib
     //                           MyExtLib-Extension-Name: com.acme.extlib
-    private void processBdasForAppLibs( ReadableArchive archive, DeploymentContext context ) {
+    private void processBdasForAppLibs(ReadableArchive archive, DeploymentContext context) {
         List<RootBeanDeploymentArchive> libBdas = new ArrayList<>();
-        try {
-            // each appLib in context.getAppLibs is a URI of the form "file:/glassfish/runtime/trunk/glassfish5/glassfish/domains/domain1/lib/applibs/mylib.jar"
-            List<URI> appLibs = context.getAppLibs();
 
-            Set<String> installedLibraries = InstalledLibrariesResolver.getInstalledLibraries(archive);
+        try {
+            // Each appLib in context.getAppLibs is a URI of the form
+            // "file:/glassfish/runtime/trunk/glassfish6/glassfish/domains/domain1/lib/applibs/mylib.jar"
+            List<URI> appLibs = context.getAppLibs();
+            Set<String> installedLibraries = getInstalledLibraries(archive);
             installedLibraries.addAll(ParamLibrariesResolver.getLibraries(context, archive));
-            if ( appLibs != null && appLibs.size() > 0 && installedLibraries != null && installedLibraries.size() > 0 ) {
-                for ( URI oneAppLib : appLibs ) {
-                    for ( String oneInstalledLibrary : installedLibraries ) {
-                        if ( oneAppLib.getPath().endsWith( oneInstalledLibrary ) ) {
+            if (!isAnyEmpty(appLibs, installedLibraries)) {
+                for (URI appLib : appLibs) {
+                    for (String installedLibrary : installedLibraries) {
+                        if (appLib.getPath().endsWith(installedLibrary)) {
                             ReadableArchive libArchive = null;
                             try {
-                                libArchive = archiveFactory.openArchive(oneAppLib);
-                                if ( libArchive.exists( WeldUtils.META_INF_BEANS_XML ) ) {
-                                    String bdaId = archive.getName() + "_" + libArchive.getName();
-                                    RootBeanDeploymentArchive rootBda =
-                                        new RootBeanDeploymentArchive(libArchive,
-                                                                      Collections.<EjbDescriptor>emptyList(),
-                                                                      context,
-                                                                      bdaId );
-                                    libBdas.add(rootBda);
+                                libArchive = archiveFactory.openArchive(appLib);
+                                if (libArchive.exists(META_INF_BEANS_XML)) {
+                                    libBdas.add(new RootBeanDeploymentArchive(
+                                        libArchive,
+                                        emptyList(),
+                                        context,
+                                        archive.getName() + "_" + libArchive.getName()));
                                 }
                             } finally {
-                                if ( libArchive != null ) {
+                                if (libArchive != null) {
                                     try {
                                         libArchive.close();
-                                    } catch ( Exception ignore ) {}
+                                    } catch (Exception ignore) {
+                                    }
                                 }
                             }
                             break;
@@ -621,114 +750,9 @@ public class DeploymentImpl implements CDI11Deployment {
             //todo: log error
         }
 
-        for ( RootBeanDeploymentArchive oneBda : libBdas ) {
-            createLibJarBda(oneBda );
+        for (RootBeanDeploymentArchive libBeanDeploymentArchive : libBdas) {
+            createLibJarBda(libBeanDeploymentArchive);
         }
     }
 
-    protected void addDeployedEjbs( Collection<EjbDescriptor> ejbs ) {
-        if ( ejbs != null ) {
-            deployedEjbs.addAll( ejbs );
-        }
-    }
-
-    public Collection<EjbDescriptor> getDeployedEjbs() {
-        return deployedEjbs;
-    }
-
-    /**
-     * Get a bda for the specified beanClass
-     *
-     * @param beanClass The beanClass to get the bda for.
-     *
-     * @return If the beanClass is in the archive represented by the bda
-     * then return that bda.  Otherwise if the class loader of the beanClass matches the module class loader
-     * of any of the root bdas then return that root bda.  Otherwise return null.
-     */
-    public BeanDeploymentArchive getBeanDeploymentArchive(Class<?> beanClass) {
-        if ( beanClass == null ) {
-            return null;
-        }
-
-        for ( BeanDeploymentArchive oneBda : beanDeploymentArchives ) {
-            BeanDeploymentArchiveImpl beanDeploymentArchiveImpl = ( BeanDeploymentArchiveImpl ) oneBda;
-            if ( beanDeploymentArchiveImpl.getBeanClassObjects().contains( beanClass ) ) {
-                return oneBda;
-            }
-        }
-
-        // find a root bda
-        ClassLoader classLoader = beanClass.getClassLoader();
-
-        RootBeanDeploymentArchive rootBda = findRootBda( classLoader, ejbRootBdas );
-        if ( rootBda == null ) {
-            rootBda = findRootBda( classLoader, warRootBdas );
-            if ( rootBda == null ) {
-                rootBda = findRootBda( classLoader, libJarRootBdas );
-                if ( rootBda == null ) {
-                    rootBda = findRootBda( classLoader, rarRootBdas );
-                }
-            }
-        }
-
-        return rootBda;
-    }
-
-    private RootBeanDeploymentArchive findRootBda( ClassLoader classLoader, List<RootBeanDeploymentArchive> rootBdas ) {
-        if ( rootBdas == null || classLoader == null ) {
-            return null;
-        }
-
-        for ( RootBeanDeploymentArchive oneRootBda : rootBdas ) {
-            if ( classLoader.equals( oneRootBda.getModuleClassLoaderForBDA() ) ) {
-                return oneRootBda;
-            }
-        }
-
-        return null;
-    }
-
-    private void createModuleBda( ReadableArchive archive,
-                                  Collection<EjbDescriptor> ejbs,
-                                  DeploymentContext context) {
-        RootBeanDeploymentArchive rootBda = new RootBeanDeploymentArchive(archive, ejbs, context );
-
-            BeanDeploymentArchive moduleBda = rootBda.getModuleBda();
-            BeansXml moduleBeansXml = moduleBda.getBeansXml();
-            if (moduleBeansXml == null || !moduleBeansXml.getBeanDiscoveryMode().equals(BeanDiscoveryMode.NONE)) {
-                addBdaToDeploymentBdas(rootBda);
-                addBdaToDeploymentBdas(moduleBda);
-                addBeanDeploymentArchives(rootBda);
-            }
-
-            // first check if the parent is an ear and if so see if there are app libs defined there.
-            if ( ! earContextAppLibBdasProcessed && context instanceof DeploymentContextImpl ) {
-                DeploymentContextImpl deploymentContext = ( DeploymentContextImpl ) context;
-                DeploymentContext parentContext = deploymentContext.getParentContext();
-                if ( parentContext != null ) {
-                    processBdasForAppLibs( parentContext.getSource(), parentContext );
-                    parentContext.getSource();
-                    earContextAppLibBdasProcessed = true;
-                }
-            }
-
-            // then check the module
-            processBdasForAppLibs(archive, context);
-    }
-
-
-
-    public Iterator<RootBeanDeploymentArchive> getLibJarRootBdas() {
-        if ( libJarRootBdas == null ) {
-            return null;
-        }
-        return libJarRootBdas.iterator();
-    }
-
-    public Iterator<RootBeanDeploymentArchive> getRarRootBdas() {
-        if ( rarRootBdas == null ) {
-            return null;
-        }
-        return rarRootBdas.iterator();
-    }
 }

@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Red Hat, Inc.
- * Copyright 2021 Fujitsu Limited.
+ * Copyright 2021-2022 Fujitsu Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ public final class Timer {
     /**
      * @param executor default {@link Executor} used for running scheduled tasks, unless an executor
      *        is provided when {@link #schedule(long, Runnable, Executor) scheduling} a task
+     * @param threadFactory
      */
     public Timer(Executor executor, ThreadFactory factory) {
         checkNotNull(executor, "Executor must be set");

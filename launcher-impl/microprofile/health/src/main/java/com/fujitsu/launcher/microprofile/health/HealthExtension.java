@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2019-2022 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,10 +10,10 @@
  */
 package com.fujitsu.launcher.microprofile.health;
 
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.BeforeBeanDiscovery;
-import javax.enterprise.inject.spi.Extension;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.BeforeBeanDiscovery;
+import jakarta.enterprise.inject.spi.Extension;
 
 import io.smallrye.health.AsyncHealthCheckFactory;
 import io.smallrye.health.registry.LivenessHealthRegistry;

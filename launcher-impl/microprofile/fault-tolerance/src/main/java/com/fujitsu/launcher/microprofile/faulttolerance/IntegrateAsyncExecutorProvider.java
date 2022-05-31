@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2021-2022 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,17 +12,17 @@ package com.fujitsu.launcher.microprofile.faulttolerance;
 
 import java.util.concurrent.ExecutorService;
 
-import javax.annotation.Priority;
-import javax.enterprise.concurrent.ManagedExecutorService;
-import javax.enterprise.inject.Alternative;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.smallrye.faulttolerance.AsyncExecutorProvider;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.concurrent.ManagedExecutorService;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 @Singleton
 @Alternative

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013, 2017 Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021 Fujitsu Limited.
+ * Copyright (c) 2013, 2020 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022 Fujitsu Limited.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -30,19 +30,13 @@ public class DefaultErrorPageGenerator implements ErrorPageGenerator {
      * {@inheritDoc}
      */
     @Override
-    public String generate(final Request request,
-            final int status, final String reasonPhrase,
-            final String description, final Throwable exception) {
+    public String generate(final Request request, final int status, final String reasonPhrase, final String description, final Throwable exception) {
         if (status == 404) {
             return HtmlHelper.getErrorPage(HttpStatus.NOT_FOUND_404.getReasonPhrase(),
-                    "Resource identified by path '" +
-                            HttpUtils.filter(request.getRequestURI()) +
-                            "', does not exist.",
+                    "Resource identified by path '" + HttpUtils.filter(request.getRequestURI()) + "', does not exist.",
                     System.getProperty("product.name"));
         }
 
-        return HtmlHelper.getExceptionErrorPage(reasonPhrase, description,
-                System.getProperty("product.name"),
-                exception);
+        return HtmlHelper.getExceptionErrorPage(reasonPhrase, description, System.getProperty("product.name"), exception);
     }
 }

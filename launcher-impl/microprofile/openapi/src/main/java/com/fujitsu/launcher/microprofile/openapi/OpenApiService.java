@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 Fujitsu Limited and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019-2022 Fujitsu Limited and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.glassfish.api.StartupRunLevel;

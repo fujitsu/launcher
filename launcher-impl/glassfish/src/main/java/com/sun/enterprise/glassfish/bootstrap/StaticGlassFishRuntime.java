@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2010, 2018 Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2019-2021 Fujitsu Limited.
+ * Copyright (c) 2019, 2021, 2022 Fujitsu Limited.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -83,7 +83,7 @@ public class StaticGlassFishRuntime extends GlassFishRuntime {
             setEnv(gfProps);
 
             final StartupContext startupContext = new StartupContext(gfProps.getProperties());
-            
+
             ModulesRegistry modulesRegistry = SingleHK2Factory.getInstance().createModulesRegistry();
 
             ServiceLocator serviceLocator = main.createServiceLocator(modulesRegistry, startupContext, Arrays.asList((PopulatorPostProcessor)new EmbeddedInhabitantsParser(), new ContextDuplicatePostProcessor()), null);

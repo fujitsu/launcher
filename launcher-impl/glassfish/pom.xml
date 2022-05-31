@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Copyright (c) 2018-2021 Fujitsu Limited and/or its affiliates. All rights
+    Copyright (c) 2018-2022 Fujitsu Limited and/or its affiliates. All rights
     reserved.
 
     This program and the accompanying materials are made available under the
@@ -21,16 +21,12 @@
     <packaging>jar</packaging>
 
     <dependencies>
-        <dependency>
-            <groupId>com.fujitsu.launcher</groupId>
-            <artifactId>patched-hk2-asm</artifactId>
-        </dependency>
-        <!-- The following jersey 2.29 modules (inserted before
+        <!-- The following jersey 3.0.4 modules (inserted before
              'glassfish-embedded-web') are introduced because the MP
              rest client (jersey-mp-rest-client) requires them but the
-             glassfish-embedded-web includes only version 2.28.  We
+             glassfish-embedded-web includes only version 3.0.3.  We
              need to delete them if the glassfish-embedded-web is
-             updated to have the jersey version 2.29 or newer. -->
+             updated to have the jersey version 3.0.4 or newer. -->
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-moxy</artifactId>
@@ -72,8 +68,8 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.glassfish.jersey.containers.glassfish</groupId>
-            <artifactId>jersey-gf-ejb</artifactId>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -255,10 +251,10 @@
             <groupId>org.glassfish.main.extras</groupId>
             <artifactId>glassfish-embedded-web</artifactId>
         </dependency>
-        <!-- bug fix for eclipse-ee4j/glassfish #22772 -->
         <dependency>
-            <groupId>org.glassfish.jersey.containers</groupId>
-            <artifactId>jersey-container-servlet</artifactId>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>3.0.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -266,10 +262,32 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- bug fix for eclipse-ee4j/glassfish #21141 -->
         <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-jaxb-annotations</artifactId>
+            <groupId>org.glassfish.exousia</groupId>
+            <artifactId>exousia</artifactId>
+            <version>1.0.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.corba</groupId>
+            <artifactId>glassfish-corba-orb</artifactId>
+            <version>4.2.4</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.corba</groupId>
+            <artifactId>rmic</artifactId>
+            <version>4.2.4</version>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -311,14 +329,42 @@
         <dependency>
             <groupId>jakarta.enterprise.concurrent</groupId>
             <artifactId>jakarta.enterprise.concurrent-api</artifactId>
-        </dependency>        
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>jakarta.enterprise.concurrent</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>org.glassfish.main.concurrent</groupId>
             <artifactId>concurrent-connector</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.glassfish.main.concurrent</groupId>
             <artifactId>concurrent-impl</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 </project>

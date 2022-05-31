@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 1997-2018 Oracle and/or its affiliates. All rights reserved.
  * Copyright 2004 The Apache Software Foundation
- * Copyright (c) 2021 Fujitsu Limited.
+ * Copyright (c) 2021, 2022 Fujitsu Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,5 +63,5 @@ public final class Constants {
     public static final boolean USE_CUSTOM_STATUS_MSG_IN_HEADER =
         Boolean.valueOf(System.getProperty(
                 "org.apache.coyote.USE_CUSTOM_STATUS_MSG_IN_HEADER",
-                "false")).booleanValue(); 
+                "false")).booleanValue();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2019-2022 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,7 +10,7 @@
  */
 package com.fujitsu.launcher.microprofile.jwt.auth;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.glassfish.api.StartupRunLevel;
 import org.glassfish.hk2.runlevel.RunLevel;

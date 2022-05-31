@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Copyright (c) 2017-2021 Fujitsu Limited and/or its affiliates. All rights
+    Copyright (c) 2017-2022 Fujitsu Limited and/or its affiliates. All rights
     reserved.
 
     This program and the accompanying materials are made available under the
@@ -134,30 +134,6 @@
                                 <filter>
                                     <artifact>org.glassfish.main.extras:glassfish-embedded-web</artifact>
                                     <excludes>
-                                        <exclude>META-INF/services/org.glassfish.jersey.internal.spi.AutoDiscoverable</exclude>
-                                        <exclude>META-INF/services/org.glassfish.jersey.server.spi.ComponentProvider</exclude>
-                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$1.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$2$1.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$2.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$3.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$4.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$DelegatedInjectionResolver$1.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$DelegatedInjectionResolver.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$ExecutionContext$1.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$ExecutionContext$NameListerPair.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$ExecutionContext.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$NameCommandClassPair.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl$UploadedFilesManager.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/admin/CommandRunnerImpl.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle$1.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle$2.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle$3.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle$4.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle$5.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle$DeploymentContextBuidlerImpl.class</exclude>
-                                        <exclude>com/sun/enterprise/v3/server/ApplicationLifecycle.class</exclude>
-                                        <exclude>org/glassfish/deployment/admin/DeployCommand.class</exclude>
-                                        <exclude>org/glassfish/deployment/admin/DeployCommand$Interceptor.class</exclude>
                                         <exclude>org/glassfish/embed/domain.xml</exclude>
                                         <exclude>org/glassfish/web/embed/default-web.xml</exclude>
                                     </excludes>

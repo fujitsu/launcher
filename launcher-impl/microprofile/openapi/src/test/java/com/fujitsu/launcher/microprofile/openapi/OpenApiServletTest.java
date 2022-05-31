@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Fujitsu Limited and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021-2022 Fujitsu Limited and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -22,8 +22,8 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.util.stream.Stream;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import io.smallrye.openapi.runtime.io.Format;
 import org.junit.jupiter.api.Test;

@@ -60,8 +60,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <maven.deploy.skip>true</maven.deploy.skip>
         <mp.config.version>3.0</mp.config.version>
         <mp.fault-tolerance.version>4.0</mp.fault-tolerance.version>

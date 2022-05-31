@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2018-2022 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,12 +10,12 @@
  */
 package com.fujitsu.launcher.microprofile.opentracing.cdi;
 
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.BeforeBeanDiscovery;
-import javax.enterprise.inject.spi.Extension;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.BeforeBeanDiscovery;
+import jakarta.enterprise.inject.spi.Extension;
 
-import io.opentracing.contrib.interceptors.OpenTracingInterceptor;
+import io.smallrye.opentracing.contrib.interceptor.OpenTracingInterceptor;
 
 /**
  * A CDI extension for registering producers and interceptors for opentracing.

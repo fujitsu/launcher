@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2021 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2018-2022 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,9 +13,9 @@ package com.fujitsu.launcher.microprofile.opentracing.cdi;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import io.opentracing.Tracer;
 import io.opentracing.contrib.tracerresolver.TracerResolver;

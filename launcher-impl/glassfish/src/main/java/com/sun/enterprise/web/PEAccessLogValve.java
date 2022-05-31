@@ -34,7 +34,6 @@ import org.glassfish.web.LogFacade;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.String;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -53,8 +52,8 @@ import java.util.logging.Logger;
  * Apache <code>mod_log_config</code> module.  As an additional feature,
  * automatic rollover of log files at a specified interval is also supported.
  *
- * </p>This class uses a direct <code>ByteBuffer</code> to store and write 
- * logs. 
+ * </p>This class uses a direct <code>ByteBuffer</code> to store and write
+ * logs.
  *
  * @author Jean-Francois Arcand
  * @author Charlie J. Hunt
@@ -83,16 +82,16 @@ public final class PEAccessLogValve
      * be reset after each rotation.
      * If undefined, all access log history files will be preserved.
      */
-    private static final String LOGGING_MAX_HISTORY_FILES = 
+    private static final String LOGGING_MAX_HISTORY_FILES =
         "com.sun.enterprise.server.logging.max_history_files";
 
-    
+
     /**
      * The minimum size a buffer can have.
      */
     private final static int MIN_BUFFER_SIZE = 5120;
-    
-    
+
+
     // ----------------------------------------------------- Instance Variables
 
 
@@ -170,62 +169,62 @@ public final class PEAccessLogValve
      * Date format to place in log file name. Use at your own risk!
      */
     private String fileDateFormat = null;
-    
-    
+
+
     /**
      * The <code>FileChannel</code> used to write the access log.
      */
     private FileChannel fileChannel;
-    
-    
+
+
     /**
      * The stream used to store the logs.
      */
     FileOutputStream fos;
-    
-    
+
+
     /**
      * The interval (in seconds) between writing the logs
      */
     private int writeInterval = 0;
 
-    
+
     /**
      * The interval between rotating the logs
      */
     private int rotationInterval;
-    
-    
+
+
     /**
      * The background writerThread.
      */
-    private Thread writerThread = null;   
-    
-    
+    private Thread writerThread = null;
+
+
     /**
      * The background writerThread completion semaphore.
      */
     private boolean threadDone = false;
 
-    
+
     /**
      * The <code>CharBuffer</code> used to store the logs.
      */
     private CharBuffer charBuffer;
-   
-    
+
+
     /**
      * The <code>byteBuffer</code> used to store the log.
      */
     private int bufferSize = MIN_BUFFER_SIZE;
-        
-    
+
+
     /**
-     * If the writer interval is equals to zero, then always flush the 
+     * If the writer interval is equals to zero, then always flush the
      * direct byte buffer after every request.
      */
     private boolean flushRealTime = true;
-    
+
 
     /**
      * Are we supposed to add datestamp to first access log file we create,
@@ -253,56 +252,56 @@ public final class PEAccessLogValve
      * The access log formatter
      */
     private AccessLogFormatter formatter;
-    
-    
+
+
     /**
      * Simple lock
      */
     private Object lock = new Object();
-    
+
 
     /**
      * Return writerThread interval (seconds)
      */
-    public int getWriterInterval() {        
-        return writeInterval;       
+    public int getWriterInterval() {
+        return writeInterval;
     }
 
-        
+
     /**
      * Set writerthread interval (seconds)
      */
     public void setWriterInterval(int t) {
         writeInterval = t;
     }
-    
-    
+
+
     /**
      * Return rotation interval
      */
-    public int geRotationInterval() {        
-        return rotationInterval;       
+    public int geRotationInterval() {
+        return rotationInterval;
     }
 
-        
+
     /**
-     * Set rotation interval 
+     * Set rotation interval
      */
     public void setRotationInterval(int t) {
         rotationInterval = t;
-    }    
+    }
 
-    
+
     /**
      * Set the direct <code>ByteBuffer</code> size
      */
     public void setBufferSize(int size){
         bufferSize = size;
     }
-    
+
     /**
      * Return the direct <code>ByteBuffer</code> size
-     */    
+     */
     public int getBufferSize(){
         return bufferSize;
     }
@@ -503,9 +502,9 @@ public final class PEAccessLogValve
      */
     public void setFileDateFormat(String fileDateFormat) {
         this.fileDateFormat =  fileDateFormat;
-    }    
-    
-    
+    }
+
+
     // --------------------------------------------------------- Public Methods
 
 
@@ -515,7 +514,7 @@ public final class PEAccessLogValve
      *
      * @param request Request being processed
      * @param response Response being processed
-     */ 
+     */
     public int invoke(Request request, Response response) {
 
         if (formatter!=null && formatter.needTimeTaken()) {
@@ -525,7 +524,7 @@ public final class PEAccessLogValve
         return INVOKE_NEXT;
     }
 
-   
+
     public void postInvoke(Request request, Response response)
             throws IOException {
 
@@ -533,13 +532,13 @@ public final class PEAccessLogValve
                 null!=request.getRequest().getAttribute(condition)) {
              return;
         }
-        
+
         synchronized (lock){
             // Reset properly the buffer in case of an unexpected
             // exception.
             if (charBuffer.position() == charBuffer.limit()){
                 charBuffer.limit(charBuffer.capacity());
-            }    
+            }
 
             int pos = charBuffer.position();
             // We've flushed our buffer to make room for the current request.
@@ -558,12 +557,12 @@ public final class PEAccessLogValve
                  } catch (BufferOverflowException ex) {
                     charBuffer.position(pos);
                     log();
-                    
+
                     if (i+1 == 2){
                         _logger.log(
                             Level.SEVERE,
                             LogFacade.ACCESS_LOG_UNABLE_TO_WRITE,
-                            new Object[] {ex});   
+                            new Object[] {ex});
                         return;
                     }
                 }
@@ -577,7 +576,7 @@ public final class PEAccessLogValve
      * has changed since the previous log call.
      */
     public void log() throws IOException {
-        
+
         if (rotatable){
 
             long systime = System.currentTimeMillis();
@@ -605,7 +604,7 @@ public final class PEAccessLogValve
                 }
             }
         }
-        
+
         synchronized(lock){
             try{
                 charBuffer.flip();
@@ -655,7 +654,7 @@ public final class PEAccessLogValve
     /**
      * Configures this accesslog valve with the accesslog related properties
      * of the given <virtual-server> bean.
-     */ 
+     */
     boolean updateVirtualServerProperties(
             String vsId,
             VirtualServer vsBean,
@@ -700,7 +699,7 @@ public final class PEAccessLogValve
                 dir = new File(env.getDomainRoot(), accessLog);
             }
         }
-            
+
         if (_logger.isLoggable(Level.FINE)) {
             _logger.log(Level.FINE,
                     LogFacade.ACCESS_LOG_DIRECTORY_SET,
@@ -726,7 +725,7 @@ public final class PEAccessLogValve
                     acWriteInterval);
             }
         }
-         
+
         /*
          * If there is any accessLogBufferSize property defined under
          * <virtual-server>, it overrides the buffer-size-bytes attribute
@@ -764,7 +763,7 @@ public final class PEAccessLogValve
         if (accessLogConfig != null) {
             format = accessLogConfig.getFormat();
         } else {
-	    format = ConfigBeansUtilities.getDefaultFormat();
+        format = ConfigBeansUtilities.getDefaultFormat();
         }
         setPattern(format);
 
@@ -772,10 +771,10 @@ public final class PEAccessLogValve
         int interval = 0;
         if (accessLogConfig != null) {
             String s = accessLogConfig.getWriteIntervalSeconds();
-            interval = Integer.parseInt(s); 
+            interval = Integer.parseInt(s);
             setWriterInterval(interval);
         }
-                       
+
         // rotation-enabled
         if (accessLogConfig != null) {
             setRotatable(Boolean.valueOf(accessLogConfig.getRotationEnabled()));
@@ -826,7 +825,7 @@ public final class PEAccessLogValve
                     maxHistoryFiles = Integer.parseInt(prop);
                 } catch (NumberFormatException e) {
                     String msg = MessageFormat.format(_rb.getString(LogFacade.INVALID_MAX_HISTORY_FILES), prop);
-                    _logger.log(Level.WARNING, msg, e);   
+                    _logger.log(Level.WARNING, msg, e);
                 }
             }
         } else {
@@ -836,7 +835,7 @@ public final class PEAccessLogValve
             } catch (NumberFormatException e) {
                 String msg = MessageFormat.format(_rb.getString(LogFacade.INVALID_MAX_HISTORY_FILES),
                     accessLogConfig.getMaxHistoryFiles());
-                _logger.log(Level.WARNING, msg, e);   
+                _logger.log(Level.WARNING, msg, e);
             }
         }
     }
@@ -850,7 +849,7 @@ public final class PEAccessLogValve
      */
     private synchronized void close() {
 
-        try{            
+        try{
             // Make sure the byteBuffer is clean
             log();
             fileChannel.close();
@@ -860,7 +859,7 @@ public final class PEAccessLogValve
         }
     }
 
-    
+
     /**
      * Open new access log file.
      *
@@ -872,7 +871,7 @@ public final class PEAccessLogValve
     private synchronized void open(String dateStamp,
                                    boolean firstAccessLogFile)
             throws IOException {
-        
+
         // Create the directory if necessary
         File dir = new File(directory);
         if (!dir.isAbsolute())
@@ -899,7 +898,7 @@ public final class PEAccessLogValve
                                prefix + suffix;
                 }
             }
-            
+
             if (rotatable
                     && addDateStampToFirstAccessLogFile) {
                 cleanUpHistoryFiles(dir, pathname);
@@ -934,10 +933,10 @@ public final class PEAccessLogValve
             } catch (IOException e){
                 ;
             }
-            
+
             // Rethrow IOException
             throw ioe;
-        } 
+        }
 
     }
 
@@ -1088,16 +1087,16 @@ public final class PEAccessLogValve
 
         lifecycle.fireLifecycleEvent(STOP_EVENT, null);
         started = false;
-        
+
         if (!flushRealTime){
             // Stop the background writer thread
             threadStop();
         }
-        
+
         close();
     }
 
-    
+
    /**
      * The background writerThread that checks for write the log.
      */
@@ -1114,17 +1113,17 @@ public final class PEAccessLogValve
         }
 
     }
-     
+
 
     /**
      * Sleep for the duration specified by the <code>writeInterval</code>
      * property.
      */
     private void threadSleep() {
-        
+
         if (writerThread == null || writeInterval == 0)
             return;
-        
+
         try {
             writerThread.sleep(writeInterval * 1000L);
         } catch (InterruptedException e) {
@@ -1133,7 +1132,7 @@ public final class PEAccessLogValve
 
     }
 
-        
+
    /**
      * Start the background writerThread that will periodically write access log
      */

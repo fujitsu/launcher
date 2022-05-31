@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2017-2021 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -32,6 +32,10 @@ public class DeployProperties extends Properties {
         setProperty("--libraries", libraries);
     }
 
+    public void setPrecompilejsp(boolean precompilejsp) {
+        setProperty("--precompilejsp", Boolean.toString(precompilejsp));
+    }
+
     public String[] getDeployOptions() {
         List<String> deployOptions = new ArrayList<>();
         deployOptions.add("--name=launcher_application");
@@ -54,6 +58,10 @@ public class DeployProperties extends Properties {
             }
 
             deployOptions.add("--libraries=" + libraries);
+        }
+
+        if (this.getProperty("--precompilejsp") != null) {
+            deployOptions.add("--precompilejsp=" + getProperty("--precompilejsp"));
         }
 
         return deployOptions.toArray(new String[deployOptions.size()]);

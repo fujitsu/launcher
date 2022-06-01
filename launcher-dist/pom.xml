@@ -144,13 +144,6 @@
                                         <exclude>META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener</exclude>
                                     </excludes>
                                 </filter>
-                                <filter>
-                                    <artifact>org.eclipse.persistence:jakarta.persistence</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter> 
                             </filters>
                         </configuration>
                     </execution>

@@ -254,7 +254,6 @@
         <dependency>
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
-            <version>3.0.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -265,7 +264,6 @@
         <dependency>
             <groupId>org.glassfish.exousia</groupId>
             <artifactId>exousia</artifactId>
-            <version>1.0.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -276,7 +274,6 @@
         <dependency>
             <groupId>org.glassfish.corba</groupId>
             <artifactId>glassfish-corba-orb</artifactId>
-            <version>4.2.4</version>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -287,7 +284,6 @@
         <dependency>
             <groupId>org.glassfish.corba</groupId>
             <artifactId>rmic</artifactId>
-            <version>4.2.4</version>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>

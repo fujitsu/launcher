@@ -17,8 +17,10 @@ package com.fujitsu.launcher.microprofile.opentracing.rs;
 import java.util.Optional;
 import java.util.logging.Logger;
 
-import io.smallrye.opentracing.contrib.jaxrs2.server.OperationNameProvider;
+import io.smallrye.opentracing.contrib.jaxrs2.server.OperationNameProvider.ClassNameOperationName;
+import io.smallrye.opentracing.contrib.jaxrs2.server.OperationNameProvider.WildcardOperationName;
 import io.smallrye.opentracing.contrib.jaxrs2.server.ServerTracingDynamicFeature;
+import io.smallrye.opentracing.contrib.jaxrs2.server.ServerTracingDynamicFeature.Builder;
 import jakarta.ws.rs.container.DynamicFeature;
 import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.FeatureContext;
@@ -52,15 +54,15 @@ public class LauncherTracingDynamicFeature implements DynamicFeature {
         Optional<String> operationNameProvider = config.getOptionalValue("mp.opentracing.server.operation-name-provider",
                 String.class);
 
-        ServerTracingDynamicFeature.Builder builder = new ServerTracingDynamicFeature.Builder(tracer)
-                .withOperationNameProvider(OperationNameProvider.ClassNameOperationName.newBuilder())
+        Builder builder = new Builder(tracer)
+                .withOperationNameProvider(ClassNameOperationName.newBuilder())
                 .withTraceSerialization(false);
         if (skipPattern.isPresent()) {
             builder.withSkipPattern(skipPattern.get());
         }
         if (operationNameProvider.isPresent()) {
             if ("http-path".equalsIgnoreCase(operationNameProvider.get())) {
-                builder.withOperationNameProvider(OperationNameProvider.WildcardOperationName.newBuilder());
+                builder.withOperationNameProvider(WildcardOperationName.newBuilder());
             } else if (!"class-method".equalsIgnoreCase(operationNameProvider.get())) {
                 logger.warning("Provided operation name does not match http-path or class-method. Using default class-method.");
             }

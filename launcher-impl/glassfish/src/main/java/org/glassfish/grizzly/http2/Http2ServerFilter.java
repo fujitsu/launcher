@@ -883,7 +883,7 @@ public class Http2ServerFilter extends Http2BaseFilter {
         }
 
         if (!response.containsHeader(Header.Date)) {
-            response.getHeaders().addValue(Header.Date).setBytes(FastHttpDateFormat.getCurrentDateBytes());
+            response.getHeaders().addValueWithoutValidation(Header.Date).setBytes(FastHttpDateFormat.getCurrentDateBytes());
         }
     }
 

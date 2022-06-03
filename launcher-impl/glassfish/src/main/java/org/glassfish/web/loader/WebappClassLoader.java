@@ -2642,7 +2642,9 @@ public class WebappClassLoader extends URLClassLoader
             return null;
         }
 
-        entry = findResourceInternalFromRepositories(name, path);
+        synchronized (jarFiles) {
+            entry = findResourceInternalFromRepositories(name, path);
+        }
 
         if (entry == null) {
             synchronized (jarFiles) {

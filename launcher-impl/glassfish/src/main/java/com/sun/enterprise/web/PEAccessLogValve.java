@@ -91,6 +91,10 @@ public final class PEAccessLogValve
      */
     private final static int MIN_BUFFER_SIZE = 5120;
 
+    /**
+     * The maximum size of a rotation interval value in minutes
+     */
+    private static final int MAX_ROTATION_INTERVAL_IN_MINUTES = Integer.MAX_VALUE / 60;
 
     // ----------------------------------------------------- Instance Variables
 
@@ -291,6 +295,15 @@ public final class PEAccessLogValve
         rotationInterval = t;
     }
 
+    /**
+     * Set rotation interval in minutes
+     */
+    public void setRotationIntervalInMinutes(int t) {
+        if (t > MAX_ROTATION_INTERVAL_IN_MINUTES) {
+            throw new IllegalArgumentException("Invalid rotation-interval-in-minutes value [" + t + "]");
+        }
+        setRotationInterval(t * 60);
+    }
 
     /**
      * Set the direct <code>ByteBuffer</code> size
@@ -786,11 +799,11 @@ public final class PEAccessLogValve
         interval = 0;
         if (accessLogConfig != null) {
             String s = accessLogConfig.getRotationIntervalInMinutes();
-            interval = Integer.parseInt(s) * 60;
+            interval = Integer.parseInt(s);
         } else {
-            interval = Integer.parseInt(ConfigBeansUtilities.getDefaultRotationIntervalInMinutes()) * 60;
+            interval = Integer.parseInt(ConfigBeansUtilities.getDefaultRotationIntervalInMinutes());
         }
-        setRotationInterval(interval);
+        setRotationIntervalInMinutes(interval);
 
         // rotation-datestamp
         String rotationDateStamp = null;

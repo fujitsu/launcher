@@ -75,6 +75,7 @@
         <logging-annotation-processor.version>1.9</logging-annotation-processor.version>
         <exousia.version>1.0.0</exousia.version>
         <glassfish-corba.version>4.2.4</glassfish-corba.version>
+        <hk2.version>3.0.3</hk2.version>
         <jersey.version>3.0.4</jersey.version>
         <jaxb-api.version>3.0.1</jaxb-api.version>
         <jaxb.version>3.0.2</jaxb.version>
@@ -287,6 +288,14 @@
                 <groupId>org.glassfish.corba</groupId>
                 <artifactId>rmic</artifactId>
                 <version>${glassfish-corba.version}</version>
+            </dependency>
+            <!-- hk2 -->
+            <dependency>
+                <groupId>org.glassfish.hk2</groupId>
+                <artifactId>hk2-bom</artifactId>
+                <version>${hk2.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
             <!-- jersey -->
             <dependency>

@@ -18,9 +18,11 @@ import jakarta.enterprise.inject.spi.Extension;
 public class ProviderExtension implements Extension {
 
     public void beforeBeanDiscovery(@Observes BeforeBeanDiscovery bbd, BeanManager bm) {
+        if (!Boolean.getBoolean("com.fujitsu.launcher.microprofile.faulttolerance.useDefaultAsyncExecutorProvider")) {
             bbd.addAnnotatedType(bm.createAnnotatedType(IntegrateAsyncExecutorProvider.class),
                     IntegrateAsyncExecutorProvider.class.getName());
-            bbd.addAnnotatedType(bm.createAnnotatedType(ThreadFactoryProvider.class),
-                    ThreadFactoryProvider.class.getName());
+        }
+        bbd.addAnnotatedType(bm.createAnnotatedType(ThreadFactoryProvider.class),
+                ThreadFactoryProvider.class.getName());
     }
 }

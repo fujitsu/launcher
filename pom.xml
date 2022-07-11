@@ -88,6 +88,7 @@
         <smallrye.openapi.version>3.0.0-RC1</smallrye.openapi.version>
         <smallrye.opentracing.version>3.0.0-RC1</smallrye.opentracing.version>
         <args4j.version>2.33</args4j.version>
+        <slf4j.version>1.7.21</slf4j.version>
         <opentracing-tracerresolver.version>0.1.8</opentracing-tracerresolver.version>
         <maven.clean.plugin.version>3.0.0</maven.clean.plugin.version>
         <maven.deploy.plugin.version>2.8.2</maven.deploy.plugin.version>
@@ -373,6 +374,12 @@
                 <groupId>args4j</groupId>
                 <artifactId>args4j</artifactId>
                 <version>${args4j.version}</version>
+            </dependency>
+            <!-- slf4j -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-jdk14</artifactId>
+                <version>${slf4j.version}</version>
             </dependency>
             <!-- opentracing-contrib -->
             <dependency>

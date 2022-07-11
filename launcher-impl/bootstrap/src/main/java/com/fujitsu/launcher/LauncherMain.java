@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2017-2022 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -243,7 +243,7 @@ public class LauncherMain {
         return Paths.get(jarURLConnection.getJarFile().getName());
     }
 
-    private void initProductName() {
+    public static void initProductName() {
         if (System.getProperty("product.name") == null) {
             System.setProperty("product.name", "");
         }

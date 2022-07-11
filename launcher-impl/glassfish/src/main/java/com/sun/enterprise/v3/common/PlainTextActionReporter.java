@@ -168,7 +168,7 @@ public class PlainTextActionReporter extends ActionReporter {
         StringBuilder out = new StringBuilder();
 
         if (ok(actionDescription)) {
-            out.append("Description: ").append(actionDescription);
+            out.append("Description: ").append(actionDescription).append('\n');
         }
 
         write("", topMessage, out);
@@ -176,7 +176,10 @@ public class PlainTextActionReporter extends ActionReporter {
     }
 
     private void write(String indent, MessagePart part, StringBuilder out) {
-        out.append(indent).append(part.getMessage()).append('\n');
+        String message = part.getMessage();
+        if (message != null) {
+            out.append(indent).append(message).append('\n');
+        }
         write(indent + INDENT, part.getProps(), out);
 
         for (MessagePart child :

@@ -101,7 +101,7 @@
         <concurrent-api.version>2.0.0</concurrent-api.version>
         <concurrent-ri.version>2.0.0</concurrent-ri.version>
         <jakarta.validation.version>3.0.0</jakarta.validation.version>
-        <jackson.databind.version>2.13.4.1</jackson.databind.version>
+        <jackson.databind.version>2.13.4.2</jackson.databind.version>
         <commons.codec.version>1.13</commons.codec.version>
     </properties>
 

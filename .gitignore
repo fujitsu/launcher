@@ -3,6 +3,7 @@
 .classpath
 .factorypath
 .project
+.idea
 .settings/
 dependency-reduced-pom.xml
 target/

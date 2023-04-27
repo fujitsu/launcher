@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2019-2023 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -58,6 +58,6 @@ public class MetricsServlet extends HttpServlet {
             }
         };
 
-        handler.handleRequest(request.getRequestURI(), request.getMethod(), acceptHeaders, responder);
+        handler.handleRequest(request.getRequestURI(), request.getMethod(), acceptHeaders, request.getParameterMap(), responder);
     }
 }

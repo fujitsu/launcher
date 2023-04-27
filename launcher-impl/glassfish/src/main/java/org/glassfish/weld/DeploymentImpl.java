@@ -1,6 +1,7 @@
 /*
+ * Copyright (c) 2019, 2022, 2023 Fujitsu Limited.
+ * Copyright (c) 2022, 2022 Contributors to the Eclipse Foundation.
  * Copyright (c) 2009, 2020 Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2019, 2022 Fujitsu Limited.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -17,11 +18,56 @@
 
 package org.glassfish.weld;
 
+import com.sun.enterprise.deploy.shared.ArchiveFactory;
+import com.sun.enterprise.deployment.EjbDescriptor;
+
+import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
+import jakarta.enterprise.inject.build.compatible.spi.SkipIfPortableExtensionPresent;
+import jakarta.enterprise.inject.spi.Extension;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.PrivilegedAction;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.ServiceLoader.Provider;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Logger;
+
+import org.glassfish.api.deployment.DeploymentContext;
+import org.glassfish.api.deployment.archive.ReadableArchive;
+import org.glassfish.cdi.CDILoggerInfo;
+import org.glassfish.deployment.common.DeploymentContextImpl;
+import org.glassfish.javaee.core.deployment.ApplicationHolder;
+import org.glassfish.weld.connector.WeldUtils.BDAType;
+import org.jboss.weld.bootstrap.WeldBootstrap;
+import org.jboss.weld.bootstrap.api.ServiceRegistry;
+import org.jboss.weld.bootstrap.api.helpers.SimpleServiceRegistry;
+import org.jboss.weld.bootstrap.spi.BeanDeploymentArchive;
+import org.jboss.weld.bootstrap.spi.BeansXml;
+import org.jboss.weld.bootstrap.spi.CDI11Deployment;
+import org.jboss.weld.bootstrap.spi.Metadata;
+import org.jboss.weld.bootstrap.spi.helpers.MetadataImpl;
+import org.jboss.weld.lite.extension.translator.LiteExtensionTranslator;
+
 import static com.sun.enterprise.util.Utility.isAnyEmpty;
 import static com.sun.enterprise.util.Utility.isAnyNull;
 import static com.sun.enterprise.util.Utility.isEmpty;
+import static java.lang.System.getSecurityManager;
+import static java.security.AccessController.doPrivileged;
 import static java.util.Collections.emptyList;
 import static java.util.logging.Level.FINE;
+import static java.util.stream.Collectors.toList;
 import static org.glassfish.cdi.CDILoggerInfo.CREATING_DEPLOYMENT_ARCHIVE;
 import static org.glassfish.cdi.CDILoggerInfo.EXCEPTION_SCANNING_JARS;
 import static org.glassfish.cdi.CDILoggerInfo.GET_BEAN_DEPLOYMENT_ARCHIVES;
@@ -40,49 +86,12 @@ import static org.glassfish.weld.connector.WeldUtils.SEPARATOR_CHAR;
 import static org.glassfish.weld.connector.WeldUtils.isImplicitBeanArchive;
 import static org.jboss.weld.bootstrap.spi.BeanDiscoveryMode.NONE;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.jar.Attributes;
-import java.util.jar.Attributes.Name;
-import java.util.jar.JarFile;
-import java.util.logging.Logger;
-
-import org.glassfish.api.deployment.DeployCommandParameters;
-import org.glassfish.api.deployment.DeploymentContext;
-import org.glassfish.api.deployment.archive.ReadableArchive;
-import org.glassfish.cdi.CDILoggerInfo;
-import org.glassfish.deployment.common.DeploymentContextImpl;
-import org.glassfish.javaee.core.deployment.ApplicationHolder;
-import org.glassfish.weld.connector.WeldUtils.BDAType;
-import org.jboss.weld.bootstrap.WeldBootstrap;
-import org.jboss.weld.bootstrap.api.ServiceRegistry;
-import org.jboss.weld.bootstrap.api.helpers.SimpleServiceRegistry;
-import org.jboss.weld.bootstrap.spi.BeanDeploymentArchive;
-import org.jboss.weld.bootstrap.spi.BeansXml;
-import org.jboss.weld.bootstrap.spi.CDI11Deployment;
-import org.jboss.weld.bootstrap.spi.Metadata;
-
-import com.sun.enterprise.deploy.shared.ArchiveFactory;
-import com.sun.enterprise.deployment.EjbDescriptor;
-
-import jakarta.enterprise.inject.spi.Extension;
-
-/*
+/**
  * Represents a deployment of a CDI (Weld) application.
  */
 public class DeploymentImpl implements CDI11Deployment {
+
+    private static final Logger LOG = CDILoggerInfo.getLogger();
 
     // Keep track of our BDAs for this deployment
     private List<RootBeanDeploymentArchive> rarRootBdas;
@@ -94,17 +103,16 @@ public class DeploymentImpl implements CDI11Deployment {
     private DeploymentContext context;
 
     // A convenience Map to get a BeanDeploymentArchive for a given BeanDeploymentArchive ID
-    private Map<String, BeanDeploymentArchive> idToBeanDeploymentArchive = new HashMap<>();
-    private SimpleServiceRegistry simpleServiceRegistry = null;
+    private final Map<String, BeanDeploymentArchive> idToBeanDeploymentArchive = new HashMap<>();
+    private SimpleServiceRegistry simpleServiceRegistry;
 
-    private Logger logger = CDILoggerInfo.getLogger();
 
     // Holds BeanDeploymentArchives created for extensions
-    private Map<ClassLoader, BeanDeploymentArchive> extensionBDAMap = new HashMap<>();
+    private final Map<ClassLoader, BeanDeploymentArchive> extensionBDAMap = new HashMap<>();
 
     private Iterable<Metadata<Extension>> extensions;
 
-    private Collection<EjbDescriptor> deployedEjbs = new LinkedList<>();
+    private final Collection<EjbDescriptor> deployedEjbs = new LinkedList<>();
     private ArchiveFactory archiveFactory;
 
     private boolean earContextAppLibBdasProcessed;
@@ -114,8 +122,8 @@ public class DeploymentImpl implements CDI11Deployment {
      * <code>ReadableArchive</code>.
      */
     public DeploymentImpl(ReadableArchive archive, Collection<EjbDescriptor> ejbs, DeploymentContext context, ArchiveFactory archiveFactory) {
-        if (logger.isLoggable(FINE)) {
-            logger.log(FINE, CREATING_DEPLOYMENT_ARCHIVE, new Object[] { archive.getName() });
+        if (LOG.isLoggable(FINE)) {
+            LOG.log(FINE, CREATING_DEPLOYMENT_ARCHIVE, new Object[] { archive.getName() });
         }
 
         this.archiveFactory = archiveFactory;
@@ -135,23 +143,23 @@ public class DeploymentImpl implements CDI11Deployment {
 
     @Override
     public BeanDeploymentArchive loadBeanDeploymentArchive(Class<?> beanClass) {
-        if (logger.isLoggable(FINE)) {
-            logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE, new Object[] { beanClass });
+        if (LOG.isLoggable(FINE)) {
+            LOG.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE, new Object[] { beanClass });
         }
 
         // Check if we have already created a bean archive for this bean class, and if so return it.
 
         for (BeanDeploymentArchive beanDeploymentArchive : beanDeploymentArchives) {
-            if (logger.isLoggable(FINE)) {
-                logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_CHECKING, new Object[] { beanClass, beanDeploymentArchive.getId() });
+            if (LOG.isLoggable(FINE)) {
+                LOG.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_CHECKING, new Object[] { beanClass, beanDeploymentArchive.getId() });
             }
 
             if (((BeanDeploymentArchiveImpl) beanDeploymentArchive).getModuleBeanClasses().contains(beanClass.getName())) {
 
                 // Don't stuff this Bean Class into the BeanDeploymentArchive's beanClasses,
                 // as Weld automatically add theses classes to the BeanDeploymentArchive's bean Classes
-                if (logger.isLoggable(FINE)) {
-                    logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_TO_EXISTING, new Object[] { beanClass.getName(), beanDeploymentArchive });
+                if (LOG.isLoggable(FINE)) {
+                    LOG.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_TO_EXISTING, new Object[] { beanClass.getName(), beanDeploymentArchive });
                 }
 
                 return beanDeploymentArchive;
@@ -163,8 +171,8 @@ public class DeploymentImpl implements CDI11Deployment {
             if (!beanDeploymentArchive.getBeanDeploymentArchives().isEmpty()) {
                 for (BeanDeploymentArchive subBeanDeploymentArchive : beanDeploymentArchive.getBeanDeploymentArchives()) {
                     Collection<String> moduleBeanClassNames = ((BeanDeploymentArchiveImpl) subBeanDeploymentArchive).getModuleBeanClasses();
-                    if (logger.isLoggable(FINE)) {
-                        logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_CHECKING_SUBBDA,
+                    if (LOG.isLoggable(FINE)) {
+                        LOG.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_CHECKING_SUBBDA,
                                 new Object[] { beanClass, subBeanDeploymentArchive.getId() });
                     }
 
@@ -172,8 +180,8 @@ public class DeploymentImpl implements CDI11Deployment {
 
                         // Don't stuff this Bean Class into the BeanDeploymentArchive's beanClasses,
                         // as Weld automatically add theses classes to the BeanDeploymentArchive's bean Classes
-                        if (logger.isLoggable(FINE)) {
-                            logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_TO_EXISTING,
+                        if (LOG.isLoggable(FINE)) {
+                            LOG.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_TO_EXISTING,
                                     new Object[] { beanClass.getName(), subBeanDeploymentArchive });
                         }
 
@@ -190,8 +198,8 @@ public class DeploymentImpl implements CDI11Deployment {
 
         // If the beanDeploymentArchive was not found for the Class, create one and add it
 
-        if (logger.isLoggable(FINE)) {
-            logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_CREATE_NEW_BDA, new Object[] { beanClass });
+        if (LOG.isLoggable(FINE)) {
+            LOG.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_CREATE_NEW_BDA, new Object[] { beanClass });
         }
 
         BeanDeploymentArchive newBeanDeploymentArchive =
@@ -212,16 +220,16 @@ public class DeploymentImpl implements CDI11Deployment {
 
         // Add the new BeanDeploymentArchive to all root BeanDeploymentArchives of this deployment.
 
-        if (logger.isLoggable(FINE)) {
-            logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_NEW_BDA_TO_ROOTS, new Object[] {});
+        if (LOG.isLoggable(FINE)) {
+            LOG.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_ADD_NEW_BDA_TO_ROOTS, new Object[] {});
         }
 
         for (BeanDeploymentArchive beanDeploymentArchive : beanDeploymentArchives) {
             beanDeploymentArchive.getBeanDeploymentArchives().add(newBeanDeploymentArchive);
         }
 
-        if (logger.isLoggable(FINE)) {
-            logger.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_RETURNING_NEWLY_CREATED_BDA,
+        if (LOG.isLoggable(FINE)) {
+            LOG.log(FINE, LOAD_BEAN_DEPLOYMENT_ARCHIVE_RETURNING_NEWLY_CREATED_BDA,
                     new Object[] { beanClass, newBeanDeploymentArchive });
         }
 
@@ -248,11 +256,31 @@ public class DeploymentImpl implements CDI11Deployment {
         }
 
         List<Metadata<Extension>> extensionsList = new ArrayList<>();
+        // Register org.jboss.weld.lite.extension.translator.LiteExtensionTranslator in order to be able to execute build compatible extensions
+        // Note that we only register this if we discovered at least one implementation of BuildCompatibleExtension
+
+        List<Class<? extends BuildCompatibleExtension>> buildExtensions = getBuildCompatibleExtensions();
+
+        if (!buildExtensions.isEmpty()) {
+            try {
+                LiteExtensionTranslator extension = getSecurityManager() != null ? doPrivileged(new PrivilegedAction<LiteExtensionTranslator>() {
+                    @Override
+                    public LiteExtensionTranslator run() {
+                        return new LiteExtensionTranslator(buildExtensions, Thread.currentThread().getContextClassLoader());
+                    }
+                }) : new LiteExtensionTranslator(buildExtensions, Thread.currentThread().getContextClassLoader());
+                extensionsList.add(new MetadataImpl<>(extension));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         for (BeanDeploymentArchive beanDeploymentArchive : getBeanDeploymentArchives()) {
             if (!(beanDeploymentArchive instanceof RootBeanDeploymentArchive)) {
-                extensions =
-                    context.getTransientAppMetaData(WELD_BOOTSTRAP, WeldBootstrap.class)
-                           .loadExtensions(((BeanDeploymentArchiveImpl) beanDeploymentArchive).getModuleClassLoaderForBDA());
+                ClassLoader classLoader = new FilteringClassLoader(((BeanDeploymentArchiveImpl) beanDeploymentArchive)
+                    .getModuleClassLoaderForBDA());
+                extensions = context.getTransientAppMetaData(WELD_BOOTSTRAP, WeldBootstrap.class)
+                    .loadExtensions(classLoader);
 
                 if (extensions != null) {
                     for (Metadata<Extension> beanDeploymentArchiveExtension : extensions) {
@@ -267,8 +295,8 @@ public class DeploymentImpl implements CDI11Deployment {
 
     @Override
     public List<BeanDeploymentArchive> getBeanDeploymentArchives() {
-        if (logger.isLoggable(FINE)) {
-            logger.log(FINE, GET_BEAN_DEPLOYMENT_ARCHIVES, new Object[] { beanDeploymentArchives });
+        if (LOG.isLoggable(FINE)) {
+            LOG.log(FINE, GET_BEAN_DEPLOYMENT_ARCHIVES, new Object[] { beanDeploymentArchives });
         }
 
         if (!beanDeploymentArchives.isEmpty()) {
@@ -296,7 +324,7 @@ public class DeploymentImpl implements CDI11Deployment {
 
         for (BeanDeploymentArchive beanDeploymentArchive : beanDeploymentArchives) {
             BeanDeploymentArchiveImpl beanDeploymentArchiveImpl = (BeanDeploymentArchiveImpl) beanDeploymentArchive;
-            if (beanDeploymentArchiveImpl.getBeanClassObjects().contains(beanClass)) {
+            if (beanDeploymentArchiveImpl.getKnownClasses().contains(beanClass.getName())) {
                 return beanDeploymentArchive;
             }
         }
@@ -540,6 +568,15 @@ public class DeploymentImpl implements CDI11Deployment {
 
     // #### Private methods
 
+    private List<Class<? extends BuildCompatibleExtension>> getBuildCompatibleExtensions() {
+        return
+            ServiceLoader.load(BuildCompatibleExtension.class, Thread.currentThread().getContextClassLoader())
+                         .stream()
+                         .map(Provider::get)
+                         .map(e -> e.getClass())
+                         .filter(e -> !e.isAnnotationPresent(SkipIfPortableExtensionPresent.class))
+                         .collect(toList());
+    }
 
     private void addBeanDeploymentArchives(RootBeanDeploymentArchive bda) {
         BDAType moduleBDAType = bda.getModuleBDAType();
@@ -585,8 +622,8 @@ public class DeploymentImpl implements CDI11Deployment {
     // This method creates and returns a List of BeanDeploymentArchives for each
     // Weld enabled jar under /lib of an existing Archive.
     private List<RootBeanDeploymentArchive> scanForLibJars(ReadableArchive archive, Collection<EjbDescriptor> ejbs, DeploymentContext context) {
-        List<ReadableArchive> libJars = null;
-        ApplicationHolder holder = context.getModuleMetaData(ApplicationHolder.class);
+        final List<ReadableArchive> libJars = new ArrayList<>();
+        final ApplicationHolder holder = context.getModuleMetaData(ApplicationHolder.class);
         if (holder != null && holder.app != null) {
             String libDir = holder.app.getLibraryDirectory();
             if (!isEmpty(libDir)) {
@@ -597,31 +634,33 @@ public class DeploymentImpl implements CDI11Deployment {
                     // If a jar is directly in lib dir and not WEB-INF/lib/foo/bar.jar
                     if (entryName.endsWith(JAR_SUFFIX) && entryName.indexOf(SEPARATOR_CHAR, libDir.length() + 1) == -1) {
                         try {
-                            ReadableArchive jarInLib = archive.getSubArchive(entryName);
+                            final ReadableArchive jarInLib = archive.getSubArchive(entryName);
                             if (jarInLib.exists(META_INF_BEANS_XML) || isImplicitBeanArchive(context, jarInLib)) {
-                                if (libJars == null) {
-                                    libJars = new ArrayList<>();
-                                }
                                 libJars.add(jarInLib);
+                            } else {
+                                jarInLib.close();
                             }
                         } catch (IOException e) {
-                            logger.log(FINE, EXCEPTION_SCANNING_JARS, new Object[] { e });
+                            LOG.log(FINE, EXCEPTION_SCANNING_JARS, new Object[] { e });
                         }
                     }
                 }
             }
         }
 
-        if (libJars != null) {
-            String libDir = holder.app.getLibraryDirectory();
-            for (ReadableArchive libJarArchive : libJars) {
-                createLibJarBda(libJarArchive, ejbs, libDir);
-            }
+        if (holder == null || libJars.isEmpty()) {
+            return libJarRootBdas;
         }
-
+        String libDir = holder.app.getLibraryDirectory();
+        for (ReadableArchive libJarArchive : libJars) {
+            createLibJarBda(libJarArchive, ejbs, libDir);
+        }
         return libJarRootBdas;
     }
 
+    /**
+     * @param libJarArchive - this method uses and closes the archive
+     */
     private void createLibJarBda(ReadableArchive libJarArchive, Collection<EjbDescriptor> ejbs, String libDir) {
         createLibJarBda(
             new RootBeanDeploymentArchive(
@@ -715,17 +754,25 @@ public class DeploymentImpl implements CDI11Deployment {
 
         try {
             // Each appLib in context.getAppLibs is a URI of the form
-            // "file:/glassfish/runtime/trunk/glassfish6/glassfish/domains/domain1/lib/applibs/mylib.jar"
-            List<URI> appLibs = context.getAppLibs();
-            Set<String> installedLibraries = getInstalledLibraries(archive);
-            installedLibraries.addAll(ParamLibrariesResolver.getLibraries(context, archive));
-            if (!isAnyEmpty(appLibs, installedLibraries)) {
-                for (URI appLib : appLibs) {
-                    for (String installedLibrary : installedLibraries) {
-                        if (appLib.getPath().endsWith(installedLibrary)) {
+            // "file:/glassfish/runtime/trunk/glassfish7/glassfish/domains/domain1/lib/applibs/mylib.jar"
+            // parentArchiveAppLibs are the app libs in the manifest of the root archive and any embedded
+            // archives.
+            List<URI> rootArchiveAppLibs = context.getAppLibs();
+
+            // Each appLib in getInstalledLibraries(archive) is a String of the form
+            // "mylib.jar"
+            // currentArchiveAppLibNames are the app libs from the manifest of only the current archive.
+            // This may therefor be a subset of the rootArchiveAppLibs when the root archive has multiple
+            // embedded libs with their own app lib references in their manifest.
+            Set<String> currentArchiveAppLibNames = getInstalledLibraries(archive);
+            currentArchiveAppLibNames.addAll(ParamLibrariesResolver.getLibraries(context, archive));
+            if (!isAnyEmpty(rootArchiveAppLibs, currentArchiveAppLibNames)) {
+                for (URI rootArchiveAppLib : rootArchiveAppLibs) {
+                    for (String currentArchiveAppLibName : currentArchiveAppLibNames) {
+                        if (rootArchiveAppLib.getPath().endsWith(currentArchiveAppLibName)) {
                             ReadableArchive libArchive = null;
                             try {
-                                libArchive = archiveFactory.openArchive(appLib);
+                                libArchive = archiveFactory.openArchive(rootArchiveAppLib);
                                 if (libArchive.exists(META_INF_BEANS_XML)) {
                                     libBdas.add(new RootBeanDeploymentArchive(
                                         libArchive,
@@ -754,5 +801,4 @@ public class DeploymentImpl implements CDI11Deployment {
             createLibJarBda(libBeanDeploymentArchive);
         }
     }
-
 }

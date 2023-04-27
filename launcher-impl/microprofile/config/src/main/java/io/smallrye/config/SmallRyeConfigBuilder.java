@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Red Hat, Inc.
- * Copyright (c) 2021-2022 Fujitsu Limited.
+ * Copyright (c) 2021-2023 Fujitsu Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,10 @@
 package io.smallrye.config;
 
 import static io.smallrye.config.ConfigSourceInterceptorFactory.DEFAULT_PRIORITY;
+import static io.smallrye.config.ProfileConfigSourceInterceptor.convertProfile;
 import static io.smallrye.config.PropertiesConfigSourceProvider.classPathSources;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -180,20 +183,66 @@ public class SmallRyeConfigBuilder implements ConfigBuilder {
         interceptors.add(new InterceptorWithPriority(new ConfigSourceInterceptorFactory() {
             @Override
             public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
-                return profiles.isEmpty() ? new ProfileConfigSourceInterceptor(context)
-                        : new ProfileConfigSourceInterceptor(profiles);
+                if (profiles.isEmpty()) {
+                    profiles.addAll(getProfile(context));
+                }
+                return new ProfileConfigSourceInterceptor(profiles);
             }
 
             @Override
             public OptionalInt getPriority() {
                 return OptionalInt.of(Priorities.LIBRARY + 200);
             }
+
+            private List<String> getProfile(final ConfigSourceInterceptorContext context) {
+                List<String> profiles = new ArrayList<>();
+                profiles.addAll(getProfiles(context, SMALLRYE_CONFIG_PROFILE_PARENT));
+                profiles.addAll(getProfiles(context, SMALLRYE_CONFIG_PROFILE));
+                return profiles;
+            }
+
+            private List<String> getProfiles(final ConfigSourceInterceptorContext context, final String propertyName) {
+                List<String> profiles = new ArrayList<>();
+                ConfigValue profileValue = context.proceed(propertyName);
+                if (profileValue != null) {
+                    final List<String> convertProfiles = convertProfile(profileValue.getValue());
+                    for (String profile : convertProfiles) {
+                        profiles.addAll(getProfiles(context, "%" + profile + "." + SMALLRYE_CONFIG_PROFILE_PARENT));
+                        profiles.add(profile);
+                    }
+                }
+                return profiles;
+            }
         }));
         interceptors.add(new InterceptorWithPriority(new ConfigSourceInterceptorFactory() {
             @Override
             public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
-                final Map<String, String> relocations = new HashMap<>();
+                Map<String, String> relocations = new HashMap<>();
                 relocations.put(SmallRyeConfig.SMALLRYE_CONFIG_PROFILE, Config.PROFILE);
+
+                List<MultipleProfileProperty> multipleProfileProperties = new ArrayList<>();
+                Iterator<String> names = context.iterateNames();
+                while (names.hasNext()) {
+                    String name = names.next();
+                    if (name.length() > 0 && name.charAt(0) == '%') {
+                        NameIterator ni = new NameIterator(name);
+                        String profileSegment = ni.getNextSegment();
+                        List<String> profiles = convertProfile(profileSegment.substring(1));
+                        if (profiles.size() > 1) {
+                            multipleProfileProperties
+                                    .add(new MultipleProfileProperty(name, name.substring(profileSegment.length()), profiles));
+                        }
+                    }
+                }
+
+                // Ordered properties by least number of profiles. Priority to the ones with most specific profiles.
+                for (MultipleProfileProperty multipleProfileProperty : multipleProfileProperties) {
+                    for (String profile : multipleProfileProperty.getProfiles()) {
+                        relocations.putIfAbsent("%" + profile + multipleProfileProperty.getRelocateName(),
+                                multipleProfileProperty.getName());
+                    }
+                }
+
                 return new RelocateConfigSourceInterceptor(relocations);
             }
 
@@ -201,11 +250,45 @@ public class SmallRyeConfigBuilder implements ConfigBuilder {
             public OptionalInt getPriority() {
                 return OptionalInt.of(Priorities.LIBRARY + 200 - 1);
             }
+
+            class MultipleProfileProperty implements Comparable<MultipleProfileProperty> {
+                private final String name;
+                private final String relocateName;
+                private final List<String> profiles;
+
+                public MultipleProfileProperty(final String name, final String relocateName, final List<String> profiles) {
+                    this.name = name;
+                    this.relocateName = relocateName;
+                    this.profiles = profiles;
+                }
+
+                public String getName() {
+                    return name;
+                }
+
+                public String getRelocateName() {
+                    return relocateName;
+                }
+
+                public List<String> getProfiles() {
+                    return profiles;
+                }
+
+                @Override
+                public int compareTo(final MultipleProfileProperty o) {
+                    return Integer.compare(this.getProfiles().size(), o.getProfiles().size());
+                }
+            }
         }));
         interceptors.add(new InterceptorWithPriority(new ConfigSourceInterceptorFactory() {
             @Override
             public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
-                return new ExpressionConfigSourceInterceptor(context);
+                boolean expressions = true;
+                ConfigValue expressionsValue = context.proceed(Config.PROPERTY_EXPRESSIONS_ENABLED);
+                if (expressionsValue != null) {
+                    expressions = Boolean.valueOf(expressionsValue.getValue());
+                }
+                return new ExpressionConfigSourceInterceptor(expressions);
             }
 
             @Override
@@ -263,7 +346,7 @@ public class SmallRyeConfigBuilder implements ConfigBuilder {
 
     public SmallRyeConfigBuilder withProfile(String profile) {
         addDefaultInterceptors();
-        this.profiles.addAll(ProfileConfigSourceInterceptor.convertProfile(profile));
+        this.profiles.addAll(convertProfile(profile));
         return this;
     }
 
@@ -338,7 +421,7 @@ public class SmallRyeConfigBuilder implements ConfigBuilder {
     }
 
     static void addConverter(Type type, int priority, Converter<?> converter,
-                             Map<Type, ConverterWithPriority> converters) {
+            Map<Type, ConverterWithPriority> converters) {
         // add the converter only if it has a higher priority than another converter for the same type
         ConverterWithPriority oldConverter = converters.get(type);
         if (oldConverter == null || priority > oldConverter.priority) {
@@ -380,6 +463,10 @@ public class SmallRyeConfigBuilder implements ConfigBuilder {
 
     public KeyMap<String> getDefaultValues() {
         return defaultValues;
+    }
+
+    ClassLoader getClassLoader() {
+        return classLoader;
     }
 
     public boolean isAddDefaultSources() {
@@ -438,23 +525,11 @@ public class SmallRyeConfigBuilder implements ConfigBuilder {
 
     @Override
     public SmallRyeConfig build() {
-        for (ConfigSourceProvider sourceProvider : sourceProviders) {
-            for (ConfigSource configSource : sourceProvider.getConfigSources(classLoader)) {
-                sources.add(configSource);
-            }
-        }
-
         ConfigMappingProvider mappingProvider = mappingsBuilder.build();
         defaultValues.putAll(mappingProvider.getDefaultValues());
-
-        try {
-            ConfigMappings configMappings = new ConfigMappings(getValidator());
-            SmallRyeConfig config = new SmallRyeConfig(this, configMappings);
-            mappingProvider.mapConfiguration(config);
-            return config;
-        } catch (ConfigValidationException e) {
-            throw new IllegalStateException(e);
-        }
+        SmallRyeConfig config = new SmallRyeConfig(this);
+        ConfigMappings.mapConfiguration(config, mappingProvider);
+        return config;
     }
 
     static class ConverterWithPriority {

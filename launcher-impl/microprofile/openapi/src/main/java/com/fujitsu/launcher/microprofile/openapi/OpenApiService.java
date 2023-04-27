@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022 Fujitsu Limited and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019-2023 Fujitsu Limited and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -15,9 +15,9 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import jakarta.inject.Inject;
 
@@ -43,6 +43,7 @@ import io.smallrye.openapi.runtime.OpenApiStaticFile;
 import io.smallrye.openapi.runtime.io.Format;
 /**
  *
+ * @author Koki Kosaka
  * @author Katsuhiro Kunisada
  * @author Takahiro Nagao
  */
@@ -85,7 +86,7 @@ public class OpenApiService implements PostConstruct, EventListener {
         }
         OpenApiStaticFile staticFile = getOpenApiStaticFile(appClassLoader);
         doc.config(config);
-        doc.modelFromStaticFile(OpenApiProcessor.modelFromStaticFile(staticFile));
+        doc.modelFromStaticFile(OpenApiProcessor.modelFromStaticFile(config, staticFile));
         doc.modelFromAnnotations(OpenApiProcessor.modelFromAnnotations(config, index));
         doc.modelFromReader(OpenApiProcessor.modelFromReader(config, getContextClassLoader()));
         doc.filter(OpenApiProcessor.getFilter(config, appClassLoader));
@@ -99,8 +100,9 @@ public class OpenApiService implements PostConstruct, EventListener {
     private IndexView getIndexForArchive(OpenApiConfig config, ReadableArchive archive, ClassLoader classLoader) {
         try {
             Indexer indexer = new Indexer();
-            index(indexer, "io/smallrye/openapi/runtime/scanner/CollectionStandin.class", classLoader);
+            index(indexer, "io/smallrye/openapi/runtime/scanner/IterableStandin.class", classLoader);
             index(indexer, "io/smallrye/openapi/runtime/scanner/MapStandin.class", classLoader);
+            index(indexer, "io/smallrye/openapi/runtime/scanner/StreamStandin.class", classLoader);
             indexArchive(config, indexer, archive, classLoader);
             return indexer.complete();
         } catch (IOException e) {
@@ -166,33 +168,36 @@ public class OpenApiService implements PostConstruct, EventListener {
         return jars.contains(Paths.get(entry).getFileName().toString());
     }
 
-    private boolean isClassToBeScanned(OpenApiConfig config, String entry) {
-        Pattern scanClasses = config.scanClasses();
-        Pattern scanPackages = config.scanPackages();
-        Pattern scanExcludeClasses = config.scanExcludeClasses();
-        Pattern scanExcludePackages = config.scanExcludePackages();
+    protected boolean isClassToBeScanned(OpenApiConfig config, String entry) {
+        Set<String> scanClasses = config.scanClasses();
+        Set<String> scanPackages = config.scanPackages();
+        Set<String> scanExcludeClasses = config.scanExcludeClasses();
+        Set<String> scanExcludePackages = config.scanExcludePackages();
 
-        if (entry == null) {
+        if (entry == null || entry.isEmpty()) {
             return false;
         }
 
         String fqcn = getFqcn(entry);
         String packageName = getPackageName(fqcn);
-        boolean ret;
 
-        if (scanClasses.pattern().isEmpty() && scanPackages.pattern().isEmpty()) {
-            ret = true;
-        } else if (!scanClasses.pattern().isEmpty() && scanPackages.pattern().isEmpty()) {
-            ret = scanClasses.matcher(fqcn).matches();
-        } else if (scanClasses.pattern().isEmpty() && !scanPackages.pattern().isEmpty()) {
-            ret = scanPackages.matcher(packageName).matches();
-        } else {
-            ret = scanClasses.matcher(fqcn).matches() || scanPackages.matcher(packageName).matches();
+        if (scanExcludeClasses.contains(fqcn)) {
+            return false;
         }
-        if (scanExcludeClasses.matcher(fqcn).matches() || scanExcludePackages.matcher(packageName).matches()) {
-            ret = false;
+
+        if (scanClasses.contains(fqcn)) {
+            return true;
         }
-        return ret;
+
+        String mostSpecifiedExcludePackage = findMostSpecifiedPackage(scanExcludePackages, packageName);
+        String mostSpecifiedIncludePackage = findMostSpecifiedPackage(scanPackages, packageName);
+
+        if (mostSpecifiedExcludePackage != null) {
+            return mostSpecifiedIncludePackage != null &&
+                    mostSpecifiedIncludePackage.length() > mostSpecifiedExcludePackage.length();
+        }
+
+        return mostSpecifiedIncludePackage != null || scanClasses.isEmpty() && scanPackages.isEmpty();
     }
 
     private String getFqcn(String className) {
@@ -200,8 +205,7 @@ public class OpenApiService implements PostConstruct, EventListener {
             className = className.substring(WEB_INF_CLASSES_PREFIX.length());
         }
 
-        String fqcn = className.replaceAll("/", ".").substring(0, className.lastIndexOf(CLASS_SUFFIX));
-        return fqcn;
+        return className.replaceAll("/", ".").substring(0, className.lastIndexOf(CLASS_SUFFIX));
     }
 
     private String getPackageName(String fqcn) {
@@ -210,6 +214,13 @@ public class OpenApiService implements PostConstruct, EventListener {
             packageName = fqcn.substring(0, fqcn.lastIndexOf("."));
         }
         return packageName;
+    }
+
+    private String findMostSpecifiedPackage(Set<String> packages, String targetPackage) {
+        return packages.stream()
+                .filter(targetPackage::startsWith)
+                .max(Comparator.comparingInt(String::length))
+                .orElse(null);
     }
 
     private OpenApiStaticFile getOpenApiStaticFile(ClassLoader classLoader) {

@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Red Hat, Inc.
- * Copyright 2021-2022 Fujitsu Limited.
+ * Copyright 2021-2023 Fujitsu Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import io.smallrye.faulttolerance.core.event.loop.EventLoop;
+import io.smallrye.faulttolerance.core.timer.ThreadTimer;
 import io.smallrye.faulttolerance.core.timer.Timer;
 
 import com.fujitsu.launcher.microprofile.faulttolerance.ThreadFactoryProvider;
@@ -42,7 +43,7 @@ public class ExecutorHolder {
     public ExecutorHolder(AsyncExecutorProvider asyncExecutorProvider, ThreadFactoryProvider threadFactoryProvider) {
         this.asyncExecutor = asyncExecutorProvider.get();
         this.eventLoop = EventLoop.get();
-        this.timer = new Timer(asyncExecutor, threadFactoryProvider.get());
+        this.timer = new ThreadTimer(asyncExecutor, threadFactoryProvider.get());
         this.shouldShutdownAsyncExecutor = asyncExecutorProvider instanceof DefaultAsyncExecutorProvider;
     }
 

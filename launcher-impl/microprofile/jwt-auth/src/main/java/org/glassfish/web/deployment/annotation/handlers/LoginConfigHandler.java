@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2019-2023 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -52,7 +52,7 @@ public class LoginConfigHandler extends AbstractWebHandler {
 
         if (!jakarta.ws.rs.core.Application.class.isAssignableFrom(annotated)) {
             log(Level.SEVERE, ainfo,
-                    localStrings.getLocalString(
+                    I18N.getLocalString(
                     "web.deployment.annotation.handlers.needtoimpl",
                     "The Class {0} having annotation {1} need to implement the interface {2}.",
                     new Object[] { annotated.getName(), LoginConfig.class.getName(), jakarta.ws.rs.core.Application.class.getName() }));

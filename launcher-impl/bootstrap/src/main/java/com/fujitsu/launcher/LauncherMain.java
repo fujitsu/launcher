@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2017-2023 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -44,7 +44,6 @@ import com.fujitsu.launcher.cli.CommandLineException;
 import com.fujitsu.launcher.cli.LauncherCommandLine;
 import com.sun.enterprise.glassfish.bootstrap.Constants;
 import com.sun.enterprise.module.bootstrap.StartupContext;
-import com.sun.enterprise.server.logging.GFFileHandler;
 
 /**
  *
@@ -262,18 +261,10 @@ public class LauncherMain {
             public void run() {
                 try {
                     glassfish.stop();
-                    // work-around for deleting server.log on disposal
-                    forceCloseLog();
                     glassfish.dispose();
                 } catch (Exception e) {
                     // fall through;
                 }
-            }
-
-            private void forceCloseLog() {
-                GFFileHandler h = Globals.get(GFFileHandler.class);
-                h.preDestroy();
-                h.close();
             }
         };
     }

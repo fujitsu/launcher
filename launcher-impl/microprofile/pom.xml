@@ -21,10 +21,10 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>config</module>
+<!--        <module>config</module>-->
         <module>fault-tolerance</module>
         <module>health</module>
-        <module>jwt-auth</module>
+<!--        <module>jwt-auth</module>-->
         <module>metrics</module>
         <module>openapi</module>
         <module>opentracing</module>

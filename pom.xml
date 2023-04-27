@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Copyright (c) 2017-2022 Fujitsu Limited and/or its affiliates. All rights
+    Copyright (c) 2017-2023 Fujitsu Limited and/or its affiliates. All rights
     reserved.
 
     This program and the accompanying materials are made available under the
@@ -71,15 +71,15 @@
         <mp.openapi.version>3.0</mp.openapi.version>
         <mp.opentracing.version>3.0</mp.opentracing.version>
         <mp.rest-client.version>3.0</mp.rest-client.version>
-        <glassfish.version>6.2.5</glassfish.version>
+        <glassfish.version>7.0.1</glassfish.version>
         <logging-annotation-processor.version>1.9</logging-annotation-processor.version>
-        <exousia.version>1.0.0</exousia.version>
         <glassfish-corba.version>4.2.4</glassfish-corba.version>
-        <hk2.version>3.0.3</hk2.version>
-        <jersey.version>3.0.4</jersey.version>
-        <jaxb-api.version>3.0.1</jaxb-api.version>
-        <jaxb.version>3.0.2</jaxb.version>
-        <jaxws-api.version>3.0.1</jaxws-api.version>
+        <jakarta.jsonp-api.version>2.1.1</jakarta.jsonp-api.version>
+        <jcip.version>1.0.2</jcip.version>
+        <jersey.version>3.1.0</jersey.version>
+        <jaxb-api.version>4.0.0</jaxb-api.version>
+        <jaxb.version>4.0.1</jaxb.version>
+        <jaxws-api.version>4.0.0</jaxws-api.version>
         <smallrye.config.version>3.0.0-RC2</smallrye.config.version>
         <smallrye.fault-tolerance.version>6.0.0-RC2</smallrye.fault-tolerance.version>
         <smallrye.health.version>4.0.0-RC1</smallrye.health.version>
@@ -98,11 +98,9 @@
         <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
         <flatten.maven.plugin.version>1.2.7</flatten.maven.plugin.version>
         <hk2.plugin.version>3.0.2</hk2.plugin.version>
-        <concurrent-api.version>2.0.0</concurrent-api.version>
-        <concurrent-ri.version>2.0.0</concurrent-ri.version>
-        <jakarta.validation.version>3.0.0</jakarta.validation.version>
-        <jackson.databind.version>2.13.4.1</jackson.databind.version>
-        <commons.codec.version>1.13</commons.codec.version>
+        <concurrent-api.version>3.0.2</concurrent-api.version>
+        <concurrent-ri.version>3.0.0</concurrent-ri.version>
+        <jakarta.validation.version>3.0.2</jakarta.validation.version>
     </properties>
 
     <dependencyManagement>
@@ -278,11 +276,6 @@
                 <version>${logging-annotation-processor.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.glassfish.exousia</groupId>
-                <artifactId>exousia</artifactId>
-                <version>${exousia.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.glassfish.corba</groupId>
                 <artifactId>glassfish-corba-orb</artifactId>
                 <version>${glassfish-corba.version}</version>
@@ -292,13 +285,15 @@
                 <artifactId>rmic</artifactId>
                 <version>${glassfish-corba.version}</version>
             </dependency>
-            <!-- hk2 -->
             <dependency>
-                <groupId>org.glassfish.hk2</groupId>
-                <artifactId>hk2-bom</artifactId>
-                <version>${hk2.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
+                <groupId>jakarta.json</groupId>
+                <artifactId>jakarta.json-api</artifactId>
+                <version>${jakarta.jsonp-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.io7m.jcip</groupId>
+                <artifactId>jcip-annotations</artifactId>
+                <version>${jcip.version}</version>
             </dependency>
             <!-- jersey -->
             <dependency>
@@ -415,18 +410,6 @@
                 <groupId>jakarta.validation</groupId>
                 <artifactId>jakarta.validation-api</artifactId>
                 <version>${jakarta.validation.version}</version>
-            </dependency>
-            <!-- jackson -->
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson.databind.version}</version>
-            </dependency>
-            <!-- commons-codec -->
-            <dependency>
-                <groupId>commons-codec</groupId>
-                <artifactId>commons-codec</artifactId>
-                <version>${commons.codec.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

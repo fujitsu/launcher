@@ -65,11 +65,11 @@
         </dependency>
         <dependency>
             <groupId>com.fujitsu.launcher</groupId>
-            <artifactId>microprofile-opentracing</artifactId>
+            <artifactId>microprofile-rest-client</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fujitsu.launcher</groupId>
-            <artifactId>microprofile-rest-client</artifactId>
+            <artifactId>microprofile-telemetry-tracing</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fujitsu.launcher</groupId>
@@ -138,12 +138,13 @@
                                         <exclude>org/glassfish/web/embed/default-web.xml</exclude>
                                     </excludes>
                                 </filter>
-                                <filter>
-                                    <artifact>io.smallrye:smallrye-opentracing</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener</exclude>
-                                    </excludes>
-                                </filter>
+                                <!--TODO Delete -->
+<!--                                <filter>-->
+<!--                                    <artifact>io.smallrye:smallrye-opentracing</artifact>-->
+<!--                                    <excludes>-->
+<!--                                        <exclude>META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener</exclude>-->
+<!--                                    </excludes>-->
+<!--                                </filter>-->
                             </filters>
                         </configuration>
                     </execution>

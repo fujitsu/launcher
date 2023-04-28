@@ -27,7 +27,7 @@
         <module>jwt-auth</module>
         <module>metrics</module>
         <module>openapi</module>
-        <module>opentracing</module>
         <module>rest-client</module>
+        <module>telemetry-tracing</module>
     </modules>
 </project>

@@ -22,6 +22,8 @@ public class OpenTelemetryConfigProducer {
             @Override
             public Map<String, String> properties() {
                 Map<String, String> properties = new HashMap<>();
+                // Default otel disabled
+                properties.put("otel.sdk.disabled", "true");
                 for (String propertyName : config.getPropertyNames()) {
                     if (propertyName.startsWith("otel.") || propertyName.startsWith("OTEL_")) {
                         config.getOptionalValue(propertyName, String.class).ifPresent(

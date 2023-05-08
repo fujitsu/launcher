@@ -5,8 +5,10 @@ import static com.fujitsu.launcher.microprofile.telemetry.tracing.config.OpenTel
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.List;
 
@@ -120,18 +122,26 @@ public class OpenTelemetryServerFilter implements ContainerRequestFilter, Contai
     private static class NetServerAttributesExtractor
             extends InetSocketAddressNetServerAttributesGetter<ContainerRequestContext> {
         @Override
-        public String getTransport(final ContainerRequestContext request) {
+        public String transport(final ContainerRequestContext request) {
             return null;
         }
 
         @Override
-        public String getHostName(final ContainerRequestContext request) {
+        public String hostName(final ContainerRequestContext request) {
             return request.getUriInfo().getRequestUri().getHost();
         }
 
         @Override
-        public Integer getHostPort(final ContainerRequestContext request) {
-            return request.getUriInfo().getRequestUri().getPort();
+        public Integer hostPort(final ContainerRequestContext request) {
+            URI uri = request.getUriInfo().getRequestUri();
+            if (uri.getPort() > 0) {
+                return uri.getPort();
+            }
+            try {
+                return uri.toURL().getDefaultPort();
+            } catch (MalformedURLException ex) {
+                return -1;
+            }
         }
 
         @Override
@@ -141,20 +151,19 @@ public class OpenTelemetryServerFilter implements ContainerRequestFilter, Contai
 
         @Override
         protected InetSocketAddress getHostSocketAddress(final ContainerRequestContext request) {
-            URI requestUri = request.getUriInfo().getRequestUri();
-            return new InetSocketAddress(requestUri.getHost(), requestUri.getPort());
+            return new InetSocketAddress(hostName(request), hostPort(request));
         }
     }
 
     private static class HttpServerAttributesExtractor
             implements HttpServerAttributesGetter<ContainerRequestContext, ContainerResponseContext> {
         @Override
-        public String getFlavor(final ContainerRequestContext request) {
+        public String flavor(final ContainerRequestContext request) {
             return (String) request.getProperty(SemanticAttributes.HTTP_FLAVOR.getKey());
         }
 
         @Override
-        public String getTarget(final ContainerRequestContext request) {
+        public String target(final ContainerRequestContext request) {
             URI requestUri = request.getUriInfo().getRequestUri();
             String path = requestUri.getPath();
             String query = requestUri.getQuery();
@@ -165,7 +174,7 @@ public class OpenTelemetryServerFilter implements ContainerRequestFilter, Contai
         }
 
         @Override
-        public String getRoute(final ContainerRequestContext request) {
+        public String route(final ContainerRequestContext request) {
             try {
                 // This can throw an IllegalArgumentException when determining the route for a subresource
                 Class<?> resourceClass = (Class<?>) request.getProperty("rest.resource.class");
@@ -188,29 +197,29 @@ public class OpenTelemetryServerFilter implements ContainerRequestFilter, Contai
         }
 
         @Override
-        public String getScheme(final ContainerRequestContext request) {
+        public String scheme(final ContainerRequestContext request) {
             return request.getUriInfo().getRequestUri().getScheme();
         }
 
         @Override
-        public String getMethod(final ContainerRequestContext request) {
+        public String method(final ContainerRequestContext request) {
             return request.getMethod();
         }
 
         @Override
-        public List<String> getRequestHeader(final ContainerRequestContext request, final String name) {
+        public List<String> requestHeader(final ContainerRequestContext request, final String name) {
             return request.getHeaders().getOrDefault(name, emptyList());
         }
 
         @Override
-        public Integer getStatusCode(final ContainerRequestContext request, final ContainerResponseContext response,
-                                     final Throwable throwable) {
+        public Integer statusCode(final ContainerRequestContext request, final ContainerResponseContext response,
+                                  final Throwable throwable) {
             return response.getStatus();
         }
 
         @Override
-        public List<String> getResponseHeader(final ContainerRequestContext request, final ContainerResponseContext response,
-                                              final String name) {
+        public List<String> responseHeader(final ContainerRequestContext request, final ContainerResponseContext response,
+                                           final String name) {
             return response.getStringHeaders().getOrDefault(name, emptyList());
         }
     }

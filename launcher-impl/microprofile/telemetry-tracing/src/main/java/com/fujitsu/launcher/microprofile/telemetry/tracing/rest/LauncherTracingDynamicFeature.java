@@ -15,5 +15,9 @@ public class LauncherTracingDynamicFeature implements DynamicFeature {
         if (serverFilter != null) {
             featureContext.register(serverFilter);
         }
+        var clientFilter = CDI.current().select(OpenTelemetryClientFilter.class).get();
+        if (clientFilter != null) {
+            featureContext.register(clientFilter);
+        }
     }
 }

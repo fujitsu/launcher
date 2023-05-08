@@ -37,7 +37,7 @@ public class OpenTelemetryProducer {
         }
 
         return builder
-                .setResultAsGlobal(true)
+                .setResultAsGlobal(false)
                 .registerShutdownHook(false)
                 .addPropertiesSupplier(() -> config.properties())
                 .build()

@@ -1,4 +1,18 @@
-package com.fujitsu.launcher.microprofile.telemetry.tracing.rest;
+/*
+ * Copyright (c) 2023 Fujitsu Limited and/or its affiliates. All rights
+ * reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v. 2.0, which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * This file incorporates work authored by SmallRye OpenTelemetry,
+ * licensed under the Apache License, Version 2.0, which is available at
+ * http://www.apache.org/licenses/LICENSE-2.0.
+ */
+package com.fujitsu.launcher.microprofile.telemetry.tracing.rest.client;
 
 import static com.fujitsu.launcher.microprofile.telemetry.tracing.config.OpenTelemetryConfig.INSTRUMENTATION_NAME;
 import static com.fujitsu.launcher.microprofile.telemetry.tracing.config.OpenTelemetryConfig.INSTRUMENTATION_VERSION;
@@ -54,7 +68,10 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
     public void filter(final ClientRequestContext request) {
         // CDI is not available in some contexts even if this library is available on the CP
         if (instrumenter != null) {
-            Context parentContext = Context.current();
+            Context parentContext = (Context) request.getProperty("otel.span.client.parentContext");
+            if (parentContext == null) {
+                parentContext = Context.current();
+            }
             if (instrumenter.shouldStart(parentContext, request)) {
                 Context spanContext = instrumenter.start(parentContext, request);
                 Scope scope = spanContext.makeCurrent();

@@ -20,23 +20,6 @@
     <artifactId>microprofile-telemetry-tracing</artifactId>
     <packaging>jar</packaging>
 
-
-    <properties>
-        <version.opentelemetry>1.22.1</version.opentelemetry>
-    </properties>
-    <dependencyManagement>
-        <dependencies>
-            <!-- This BOM includes the opentelemetry-bom and the opentelemetry-bom-alpha -->
-            <dependency>
-                <groupId>io.opentelemetry.instrumentation</groupId>
-                <artifactId>opentelemetry-instrumentation-bom-alpha</artifactId>
-                <version>${version.opentelemetry}-alpha</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
         <dependency>
             <groupId>com.fujitsu.launcher</groupId>
@@ -50,14 +33,6 @@
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-sdk-trace</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-extension-annotations</artifactId>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
@@ -78,10 +53,6 @@
         <dependency>
             <groupId>org.eclipse.microprofile.config</groupId>
             <artifactId>microprofile-config-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.microprofile.rest.client</groupId>
-            <artifactId>microprofile-rest-client-api</artifactId>
         </dependency>
     </dependencies>
 </project>

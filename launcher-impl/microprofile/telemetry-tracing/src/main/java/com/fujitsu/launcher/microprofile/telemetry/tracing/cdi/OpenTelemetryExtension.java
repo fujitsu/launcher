@@ -1,8 +1,21 @@
+/*
+ * Copyright (c) 2023 Fujitsu Limited and/or its affiliates. All rights
+ * reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v. 2.0, which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * This file incorporates work authored by SmallRye OpenTelemetry,
+ * licensed under the Apache License, Version 2.0, which is available at
+ * http://www.apache.org/licenses/LICENSE-2.0.
+ */
 package com.fujitsu.launcher.microprofile.telemetry.tracing.cdi;
 
-import com.fujitsu.launcher.microprofile.telemetry.tracing.config.OpenTelemetryConfigProducer;
-import com.fujitsu.launcher.microprofile.telemetry.tracing.rest.OpenTelemetryClientFilter;
-import com.fujitsu.launcher.microprofile.telemetry.tracing.rest.OpenTelemetryServerFilter;
+import com.fujitsu.launcher.microprofile.telemetry.tracing.rest.client.OpenTelemetryClientFilter;
+import com.fujitsu.launcher.microprofile.telemetry.tracing.rest.server.OpenTelemetryServerFilter;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.spi.AfterBeanDiscovery;

@@ -138,13 +138,6 @@
                                         <exclude>org/glassfish/web/embed/default-web.xml</exclude>
                                     </excludes>
                                 </filter>
-                                <!--TODO Delete -->
-<!--                                <filter>-->
-<!--                                    <artifact>io.smallrye:smallrye-opentracing</artifact>-->
-<!--                                    <excludes>-->
-<!--                                        <exclude>META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener</exclude>-->
-<!--                                    </excludes>-->
-<!--                                </filter>-->
                             </filters>
                         </configuration>
                     </execution>

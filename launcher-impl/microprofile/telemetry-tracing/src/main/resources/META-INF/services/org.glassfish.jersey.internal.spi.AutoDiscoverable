@@ -1,1 +1,2 @@
-com.fujitsu.launcher.microprofile.telemetry.tracing.rest.OpenTelemetryAutoDiscoverable
+com.fujitsu.launcher.microprofile.telemetry.tracing.rest.server.OpenTelemetryServerAutoDiscoverable
+com.fujitsu.launcher.microprofile.telemetry.tracing.rest.client.OpenTelemetryClientAutoDiscoverable

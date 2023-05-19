@@ -70,6 +70,7 @@
         <mp.metrics.version>5.0.0</mp.metrics.version>
         <mp.openapi.version>3.1</mp.openapi.version>
         <mp.rest-client.version>3.0.1</mp.rest-client.version>
+        <mp.telemetry.version>1.0</mp.telemetry.version>
         <glassfish.version>7.0.1</glassfish.version>
         <logging-annotation-processor.version>1.9</logging-annotation-processor.version>
         <glassfish-corba.version>4.2.4</glassfish-corba.version>
@@ -85,6 +86,7 @@
         <smallrye.jwt.version>4.2.1</smallrye.jwt.version>
         <smallrye.metrics.version>5.0.0</smallrye.metrics.version>
         <smallrye.openapi.version>3.3.2</smallrye.openapi.version>
+        <version.opentelemetry>1.22.1</version.opentelemetry>
         <args4j.version>2.33</args4j.version>
         <slf4j.version>1.7.21</slf4j.version>
         <maven.clean.plugin.version>3.0.0</maven.clean.plugin.version>
@@ -242,6 +244,11 @@
                 <artifactId>microprofile-rest-client-tck</artifactId>
                 <version>${mp.rest-client.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.eclipse.microprofile.telemetry.tracing</groupId>
+                <artifactId>microprofile-telemetry-tracing-tck</artifactId>
+                <version>${mp.telemetry.version}</version>
+            </dependency>
             <!-- glassfish -->
             <dependency>
                 <groupId>org.glassfish.main.extras</groupId>
@@ -349,6 +356,14 @@
                 <groupId>io.micrometer</groupId>
                 <artifactId>micrometer-registry-prometheus</artifactId>
                 <version>${micrometer.version}</version>
+            </dependency>
+            <!-- OpenTelemetry -->
+            <dependency>
+                <groupId>io.opentelemetry.instrumentation</groupId>
+                <artifactId>opentelemetry-instrumentation-bom-alpha</artifactId>
+                <version>${version.opentelemetry}-alpha</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <!-- args4j -->
             <dependency>

@@ -275,7 +275,7 @@ public final class ApplicationHandler implements ContainerLifecycleListener {
     }
 
     private void initialize(ApplicationConfigurator applicationConfigurator, InjectionManager injectionManager,
-                            Binder customBinder) {
+            Binder customBinder) {
         LOGGER.config(LocalizationMessages.INIT_MSG(Version.getBuildId()));
         this.injectionManager = injectionManager;
         this.injectionManager.register(CompositeBinder.wrap(new ServerBinder(), customBinder));
@@ -315,7 +315,7 @@ public final class ApplicationHandler implements ContainerLifecycleListener {
      * Assumes the configuration field is initialized with a valid ResourceConfig.
      */
     private ServerRuntime initialize(InjectionManager injectionManager, List<BootstrapConfigurator> bootstrapConfigurators,
-                                     ServerBootstrapBag bootstrapBag) {
+            ServerBootstrapBag bootstrapBag) {
 
         this.application = bootstrapBag.getApplication();
         this.runtimeConfig = bootstrapBag.getRuntimeConfig();
@@ -380,7 +380,7 @@ public final class ApplicationHandler implements ContainerLifecycleListener {
             if (!disableValidation()) {
                 ComponentModelValidator validator = new ComponentModelValidator(
                         bootstrapBag.getValueParamProviders(), bootstrapBag.getMessageBodyWorkers());
-                validator.validate(bootstrapBag.getResourceModel());
+                    validator.validate(bootstrapBag.getResourceModel());
             }
 
             if (Errors.fatalIssuesFound() && !ignoreValidationError()) {
@@ -405,15 +405,15 @@ public final class ApplicationHandler implements ContainerLifecycleListener {
                 processingProviders.getGlobalResponseFilters());
         final ChainableStage<RequestProcessingContext> routingStage =
                 Routing.forModel(bootstrapBag.getResourceModel().getRuntimeResourceModel())
-                        .resourceContext(bootstrapBag.getResourceContext())
-                        .configuration(runtimeConfig)
-                        .entityProviders(msgBodyWorkers)
-                        .valueSupplierProviders(bootstrapBag.getValueParamProviders())
-                        .modelProcessors(Providers.getAllRankedSortedProviders(injectionManager, ModelProcessor.class))
-                        .createService(serviceType -> Injections.getOrCreate(injectionManager, serviceType))
-                        .processingProviders(processingProviders)
-                        .resourceMethodInvokerBuilder(bootstrapBag.getResourceMethodInvokerBuilder())
-                        .buildStage();
+                    .resourceContext(bootstrapBag.getResourceContext())
+                    .configuration(runtimeConfig)
+                    .entityProviders(msgBodyWorkers)
+                    .valueSupplierProviders(bootstrapBag.getValueParamProviders())
+                    .modelProcessors(Providers.getAllRankedSortedProviders(injectionManager, ModelProcessor.class))
+                    .createService(serviceType -> Injections.getOrCreate(injectionManager, serviceType))
+                    .processingProviders(processingProviders)
+                    .resourceMethodInvokerBuilder(bootstrapBag.getResourceMethodInvokerBuilder())
+                    .buildStage();
         /*
          *  Root linear request acceptor. This is the main entry point for the whole request processing.
          */
@@ -460,11 +460,10 @@ public final class ApplicationHandler implements ContainerLifecycleListener {
     }
 
     private boolean ignoreValidationError() {
-        String ignoreErrorStr = System.getProperty(ServerProperties.RESOURCE_VALIDATION_IGNORE_ERRORS, "false");
-        Boolean ignoreError = ignoreErrorStr.equalsIgnoreCase("false") ? Boolean.FALSE : Boolean.TRUE;
+        Boolean ignoreErrorByDefault = Boolean.getBoolean(ServerProperties.RESOURCE_VALIDATION_IGNORE_ERRORS);
         return ServerProperties.getValue(runtimeConfig.getProperties(),
                 ServerProperties.RESOURCE_VALIDATION_IGNORE_ERRORS,
-                ignoreError,
+                ignoreErrorByDefault,
                 Boolean.class);
     }
 
@@ -534,9 +533,9 @@ public final class ApplicationHandler implements ContainerLifecycleListener {
         printProviders(LocalizationMessages.LOGGING_DYNAMIC_FEATURES(),
                 processingProviders.getDynamicFeatures(), sb);
         printProviders(LocalizationMessages.LOGGING_MESSAGE_BODY_READERS(),
-                messageBodyReaders.stream().map(new WorkersToStringTransform<>()).collect(Collectors.toList()), sb);
+                       messageBodyReaders.stream().map(new WorkersToStringTransform<>()).collect(Collectors.toList()), sb);
         printProviders(LocalizationMessages.LOGGING_MESSAGE_BODY_WRITERS(),
-                messageBodyWriters.stream().map(new WorkersToStringTransform<>()).collect(Collectors.toList()), sb);
+                       messageBodyWriters.stream().map(new WorkersToStringTransform<>()).collect(Collectors.toList()), sb);
 
         LOGGER.log(Level.CONFIG, sb.toString());
     }

@@ -226,13 +226,13 @@ public class OpenTelemetryServerFilter implements ContainerRequestFilter, Contai
 
         @Override
         public Integer statusCode(final ContainerRequestContext request, final ContainerResponseContext response,
-                                  final Throwable throwable) {
+                final Throwable throwable) {
             return response.getStatus();
         }
 
         @Override
         public List<String> responseHeader(final ContainerRequestContext request, final ContainerResponseContext response,
-                                           final String name) {
+                final String name) {
             return response.getStringHeaders().getOrDefault(name, emptyList());
         }
     }

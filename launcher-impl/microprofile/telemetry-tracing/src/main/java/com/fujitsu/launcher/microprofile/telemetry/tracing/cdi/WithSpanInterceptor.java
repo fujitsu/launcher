@@ -14,6 +14,15 @@
  */
 package com.fujitsu.launcher.microprofile.telemetry.tracing.cdi;
 
+import static com.fujitsu.launcher.microprofile.telemetry.tracing.config.OpenTelemetryConfig.INSTRUMENTATION_NAME;
+import static com.fujitsu.launcher.microprofile.telemetry.tracing.config.OpenTelemetryConfig.INSTRUMENTATION_VERSION;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.InvocationContext;
+
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.Context;
@@ -26,14 +35,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.util.SpanNames;
-import jakarta.interceptor.AroundInvoke;
-import jakarta.interceptor.InvocationContext;
-
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-
-import static com.fujitsu.launcher.microprofile.telemetry.tracing.config.OpenTelemetryConfig.INSTRUMENTATION_NAME;
-import static com.fujitsu.launcher.microprofile.telemetry.tracing.config.OpenTelemetryConfig.INSTRUMENTATION_VERSION;
 
 public class WithSpanInterceptor {
     private final Instrumenter<MethodRequest, Void> instrumenter;

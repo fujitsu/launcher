@@ -14,21 +14,25 @@
  */
 package com.fujitsu.launcher.microprofile.telemetry.tracing.cdi;
 
-import com.fujitsu.launcher.microprofile.telemetry.tracing.config.OpenTelemetryConfig;
-import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Inject;
-
-import jakarta.inject.Singleton;
-import org.eclipse.microprofile.config.Config;
-
 import java.util.HashMap;
 import java.util.Map;
 
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+import org.eclipse.microprofile.config.Config;
+
+import com.fujitsu.launcher.microprofile.telemetry.tracing.config.OpenTelemetryConfig;
 
 @Singleton
 public class OpenTelemetryConfigProducer {
     @Inject
     Config config;
+
+    static final Map<String, String> defaultProperties = Map.of(
+            "otel.sdk.disabled", "true",
+            "otel.metrics.exporter", "none");
 
     @Produces
     @Singleton
@@ -36,9 +40,7 @@ public class OpenTelemetryConfigProducer {
         return new OpenTelemetryConfig() {
             @Override
             public Map<String, String> properties() {
-                Map<String, String> properties = new HashMap<>();
-                // Default otel disabled
-                properties.put("otel.sdk.disabled", "true");
+                Map<String, String> properties = new HashMap<>(defaultProperties);
                 for (String propertyName : config.getPropertyNames()) {
                     if (propertyName.startsWith("otel.") || propertyName.startsWith("OTEL_")) {
                         config.getOptionalValue(propertyName, String.class).ifPresent(

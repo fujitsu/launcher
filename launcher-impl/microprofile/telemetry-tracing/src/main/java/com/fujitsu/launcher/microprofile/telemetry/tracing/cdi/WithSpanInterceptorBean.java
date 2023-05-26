@@ -14,9 +14,11 @@
  */
 package com.fujitsu.launcher.microprofile.telemetry.tracing.cdi;
 
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.instrumentation.annotations.WithSpan;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.Set;
+
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.spi.Bean;
@@ -28,10 +30,9 @@ import jakarta.enterprise.inject.spi.Prioritized;
 import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.interceptor.InvocationContext;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.Set;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 
 public class WithSpanInterceptorBean implements Interceptor<WithSpanInterceptor>, Prioritized {
     private final BeanManager beanManager;

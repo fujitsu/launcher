@@ -17,7 +17,6 @@ import org.glassfish.jersey.client.spi.PreInvocationInterceptor;
 public class OpenTelemetryPreInvocationInterceptor implements PreInvocationInterceptor {
     @Override
     public void beforeRequest(ClientRequestContext clientRequestContext) {
-        Context parentContext = Context.current();
-        clientRequestContext.setProperty("otel.span.client.parentContext", parentContext);
+        clientRequestContext.setProperty("otel.span.client.parentContext", Context.current());
     }
 }

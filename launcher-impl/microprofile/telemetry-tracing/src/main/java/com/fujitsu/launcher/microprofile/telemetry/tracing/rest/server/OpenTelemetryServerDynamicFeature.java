@@ -25,9 +25,13 @@ public class OpenTelemetryServerDynamicFeature implements DynamicFeature {
             return;
         }
 
-        var serverFilter = CDI.current().select(OpenTelemetryServerFilter.class).get();
-        if (serverFilter != null) {
-            featureContext.register(serverFilter);
+        try {
+            var serverFilter = CDI.current().select(OpenTelemetryServerFilter.class).get();
+            if (serverFilter != null) {
+                featureContext.register(serverFilter);
+            }
+        } catch (IllegalStateException e) {
+            // noop
         }
     }
 }

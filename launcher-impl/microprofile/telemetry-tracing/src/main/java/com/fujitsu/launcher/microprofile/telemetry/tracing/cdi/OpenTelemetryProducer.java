@@ -14,7 +14,20 @@
  */
 package com.fujitsu.launcher.microprofile.telemetry.tracing.cdi;
 
+import static com.fujitsu.launcher.microprofile.telemetry.tracing.config.OpenTelemetryConfig.INSTRUMENTATION_NAME;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import com.fujitsu.launcher.microprofile.telemetry.tracing.config.OpenTelemetryConfig;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Disposes;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.baggage.Baggage;
 import io.opentelemetry.api.trace.Span;
@@ -23,16 +36,6 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.common.CompletableResultCode;
-import jakarta.enterprise.context.RequestScoped;
-import jakarta.enterprise.inject.Disposes;
-import jakarta.enterprise.inject.Produces;
-import jakarta.enterprise.inject.spi.CDI;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Singleton
 public class OpenTelemetryProducer {
@@ -60,7 +63,7 @@ public class OpenTelemetryProducer {
     @Produces
     @Singleton
     public Tracer getTracer() {
-        return CDI.current().select(OpenTelemetry.class).get().getTracer(OpenTelemetryConfig.INSTRUMENTATION_NAME);
+        return CDI.current().select(OpenTelemetry.class).get().getTracer(INSTRUMENTATION_NAME);
     }
 
     @Produces

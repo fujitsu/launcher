@@ -138,13 +138,13 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
 
         @Override
         public Integer statusCode(final ClientRequestContext request, final ClientResponseContext response,
-                                  final Throwable throwable) {
+                final Throwable throwable) {
             return response.getStatus();
         }
 
         @Override
         public List<String> responseHeader(final ClientRequestContext request, final ClientResponseContext response,
-                                           final String name) {
+                final String name) {
             return response.getHeaders().getOrDefault(name, emptyList());
         }
     }

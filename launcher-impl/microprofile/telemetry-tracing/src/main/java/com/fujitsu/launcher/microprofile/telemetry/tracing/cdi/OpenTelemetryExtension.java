@@ -14,9 +14,16 @@
  */
 package com.fujitsu.launcher.microprofile.telemetry.tracing.cdi;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import com.fujitsu.launcher.microprofile.telemetry.tracing.rest.client.OpenTelemetryClientFilter;
 import com.fujitsu.launcher.microprofile.telemetry.tracing.rest.server.OpenTelemetryServerFilter;
-import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.spi.AfterBeanDiscovery;
 import jakarta.enterprise.inject.spi.AnnotatedConstructor;
@@ -29,22 +36,15 @@ import jakarta.enterprise.inject.spi.BeforeBeanDiscovery;
 import jakarta.enterprise.inject.spi.Extension;
 import jakarta.enterprise.util.Nonbinding;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 
 public class OpenTelemetryExtension implements Extension {
-
     public void beforeBeanDiscovery(@Observes BeforeBeanDiscovery beforeBeanDiscovery, BeanManager beanManager) {
         beforeBeanDiscovery.addInterceptorBinding(
                 new WithSpanAnnotatedType(beanManager.createAnnotatedType(WithSpan.class)));
 
-        beforeBeanDiscovery.addAnnotatedType(OpenTelemetryConfigProducer.class, OpenTelemetryConfigProducer.class.getName());
         beforeBeanDiscovery.addAnnotatedType(OpenTelemetryProducer.class, OpenTelemetryProducer.class.getName());
+        beforeBeanDiscovery.addAnnotatedType(OpenTelemetryConfigProducer.class, OpenTelemetryConfigProducer.class.getName());
         beforeBeanDiscovery.addAnnotatedType(OpenTelemetryServerFilter.class, OpenTelemetryServerFilter.class.getName());
         beforeBeanDiscovery.addAnnotatedType(OpenTelemetryClientFilter.class, OpenTelemetryClientFilter.class.getName());
     }

@@ -82,7 +82,7 @@
       <network-config>
         <protocols>
           <protocol name="http-listener">
-            <http default-virtual-server="server" max-connections="250" xpowered-by="false">
+            <http default-virtual-server="server" redirect-port="0" max-connections="250" xpowered-by="false">
               <file-cache enabled="false"></file-cache>
             </http>
           </protocol>

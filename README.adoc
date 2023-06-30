@@ -4,26 +4,22 @@
 == Overview
 Launcher is an implementation of https://microprofile.io/[MicroProfile].
 
-Launcher 4.0 supports MicroProfile 5.0 and some APIs from Jakarta EE 9.1.
+Launcher 5.0 supports MicroProfile 6.0 and some APIs from Jakarta EE 10.
 Currently supported APIs are as follows:
 
 * MicroProfile Config 3.0
 * MicroProfile Fault Tolerance 4.0
 * MicroProfile Health 4.0
-* MicroProfile JWT Authentication 2.0
-* MicroProfile Metrics 4.0
-* MicroProfile OpenAPI 3.0
-* MicroProfile OpenTracing 3.0
+* MicroProfile JWT Authentication 2.1
+* MicroProfile Metrics 5.0
+* MicroProfile OpenAPI 3.1
+* MicroProfile Telemetry 1.0
 * MicroProfile Rest Client 3.0
-* Jakarta Annotations 2.0
-* Jakarta Contexts and Dependency Injection 3.0
-* Jakarta Expression Language 4.0
-* Jakarta JSON Binding 2.0
-* Jakarta JSON Processing 2.0
-* Jakarta RESTful Web Services 3.0
-* Jakarta Server Pages 3.0
-* Jakarta Servlet 5.0
-* Jakarta Standard Tag Library 2.0
+* Jakarta EE 10 Core Profile
+* Jakarta Expression Language 5.0
+* Jakarta Server Pages 3.1
+* Jakarta Servlet 6.0
+* Jakarta Standard Tag Library 3.0
 
 Launcher provides features to run MicroProfile applications and create portable uber (fat) JARs.
 For more details, please refer to link:docs/Usage.adoc[].

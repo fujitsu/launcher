@@ -406,8 +406,10 @@ public class Request {
                     if (disableSchemeMappingValidation) {
                         scheme = suggestedScheme;
                     } else {
-                        if (suggestedScheme == null || "http".equalsIgnoreCase(suggestedScheme) || "https".equalsIgnoreCase(suggestedScheme)) {
-                            scheme = suggestedScheme;
+                        if (suggestedScheme == null) {
+                            scheme = null;
+                        } else if ("https".equalsIgnoreCase(suggestedScheme)) {
+                            scheme = "https";
                         } else {
                             scheme = "http";
                         }

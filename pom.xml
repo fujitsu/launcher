@@ -101,6 +101,7 @@
         <concurrent-ri.version>3.0.0</concurrent-ri.version>
         <jakarta.validation.version>3.0.2</jakarta.validation.version>
         <micrometer.version>1.9.3</micrometer.version>
+        <jettison.version>1.5.4</jettison.version>
     </properties>
 
     <dependencyManagement>
@@ -403,6 +404,12 @@
                 <groupId>jakarta.validation</groupId>
                 <artifactId>jakarta.validation-api</artifactId>
                 <version>${jakarta.validation.version}</version>
+            </dependency>
+            <!-- jettison -->
+            <dependency>
+                <groupId>org.codehaus.jettison</groupId>
+                <artifactId>jettison</artifactId>
+                <version>${jettison.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

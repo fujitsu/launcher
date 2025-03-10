@@ -4,7 +4,7 @@
 == Overview
 Launcher is an implementation of https://microprofile.io/[MicroProfile].
 
-Launcher 5.0 supports MicroProfile 6.0 and some APIs from Jakarta EE 10.
+Launcher 5.1 supports MicroProfile 6.0 and some APIs from Jakarta EE 10.
 Currently supported APIs are as follows:
 
 * MicroProfile Config 3.0

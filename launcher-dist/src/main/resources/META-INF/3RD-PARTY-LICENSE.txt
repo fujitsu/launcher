@@ -257,7 +257,7 @@
 
 ################################################################################
 
-# ASM 9.4 (http://asm.ow2.io/)
+# ASM 9.7 (http://asm.ow2.io/)
 
 ASM: a very small and fast Java bytecode manipulation framework
 Copyright (c) 2000-2011 INRIA, France Telecom
@@ -387,7 +387,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # eclipse-ee4j-soteria 3.0.2 (https://github.com/eclipse-ee4j/soteria)
 # eclipse-ee4j-tyrus 2.1.2 (https://github.com/eclipse-ee4j/tyrus)
 # EclipseLink 4.0.0 (http://www.eclipse.org/eclipselink)
-# EclipseLink ASM 9.4.0 (http://www.eclipse.org/eclipselink)
+# EclipseLink ASM 9.7.0 (http://www.eclipse.org/eclipselink)
 # Exousia 2.1.0 (https://github.com/eclipse-ee4j/exousia)
 # Jakarta Mail 2.1.1 (https://jakartaee.github.io/mail-api)
 # javax.transaction API 2.0.1 (https://github.com/eclipse-ee4j/jta-api)

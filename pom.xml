@@ -103,6 +103,7 @@
         <micrometer.version>1.9.3</micrometer.version>
         <jettison.version>1.5.4</jettison.version>
         <asm.version>9.7</asm.version>
+        <eclipselink.asm.version>9.7.0</eclipselink.asm.version>
     </properties>
 
     <dependencyManagement>
@@ -432,6 +433,11 @@
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm-util</artifactId>
                 <version>${asm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.persistence</groupId>
+                <artifactId>org.eclipse.persistence.asm</artifactId>
+                <version>${eclipselink.asm.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

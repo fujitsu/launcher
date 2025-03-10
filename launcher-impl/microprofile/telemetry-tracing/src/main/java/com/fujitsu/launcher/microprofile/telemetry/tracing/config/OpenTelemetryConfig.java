@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Fujitsu Limited and/or its affiliates. All rights
+ * Copyright (c) 2023-2024 Fujitsu Limited and/or its affiliates. All rights
  * reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,7 +21,7 @@ public interface OpenTelemetryConfig {
     // TODO Get from glassfish-version.properties
     static String INSTRUMENTATION_NAME = "Launcher";
 
-    String INSTRUMENTATION_VERSION = Optional.of("5.0").orElse("SNAPSHOT");
+    String INSTRUMENTATION_VERSION = Optional.of("5.1").orElse("SNAPSHOT");
 
     Map<String, String> properties();
 }

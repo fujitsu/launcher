@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Fujitsu Limited.
  * Copyright (c) 2014, 2020 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -73,6 +74,7 @@ public abstract class HeaderBlockFragment extends Http2Frame {
         }
 
         compressedHeaders = null;
+        truncated = false;
         super.recycle();
     }
 

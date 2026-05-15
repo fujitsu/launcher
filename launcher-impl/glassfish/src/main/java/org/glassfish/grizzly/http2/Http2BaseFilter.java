@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Fujitsu Limited.
  * Copyright (c) 2012, 2020 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -595,7 +596,11 @@ public abstract class Http2BaseFilter extends HttpBaseFilter {
 
         if (headerBlockFragment.getCompressedHeaders().hasRemaining()) {
             if (!headersDecoder.append(headerBlockFragment.takePayload())) {
-                headersDecoder.setFirstHeaderFrame((HeaderBlockHead) headerBlockFragment);
+                if (headersDecoder.isProcessingHeaders()) {
+                    headerBlockFragment.recycle(); // Recycle continuation frame
+                } else {
+                    headersDecoder.setFirstHeaderFrame((HeaderBlockHead) headerBlockFragment);
+                }
                 final HeaderBlockHead firstHeaderFrame = headersDecoder.finishHeader();
                 firstHeaderFrame.setTruncated();
                 try {

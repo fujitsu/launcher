@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Fujitsu Limited.
  * Copyright (c) 2010, 2020 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -389,7 +390,8 @@ public class OutputBuffer {
 
         checkCharBuffer();
 
-        if (charsArrayLength == charsArray.length) {
+        if (charsArrayLength == charsArray.length ||
+                (charsArrayLength == charsArray.length - 1 && Character.isHighSurrogate((char) c))) {
             flushCharsToBuf(true);
         }
 
@@ -418,13 +420,14 @@ public class OutputBuffer {
             System.arraycopy(cbuf, off, charsArray, charsArrayLength, len);
             charsArrayLength += len;
         } else if (len - remaining < remaining) {
-            System.arraycopy(cbuf, off, charsArray, charsArrayLength, remaining);
-            charsArrayLength += remaining;
+            int copyLen = Character.isHighSurrogate(cbuf[off + remaining - 1]) ? remaining - 1 : remaining;
+            System.arraycopy(cbuf, off, charsArray, charsArrayLength, copyLen);
+            charsArrayLength += copyLen;
 
             flushCharsToBuf(true);
 
-            System.arraycopy(cbuf, off + remaining, charsArray, 0, len - remaining);
-            charsArrayLength = len - remaining;
+            System.arraycopy(cbuf, off + copyLen, charsArray, 0, len - copyLen);
+            charsArrayLength = len - copyLen;
         } else {
             flushCharsToBuf(false);
             flushCharsToBuf(CharBuffer.wrap(cbuf, off, len), true);
@@ -467,7 +470,12 @@ public class OutputBuffer {
 
         do {
             final int remaining = charsArray.length - charsArrayLength;
-            final int workingLen = Math.min(lenLocal, remaining);
+            int workingLen = Math.min(lenLocal, remaining);
+
+            if (remaining > 0 && lenLocal > remaining &&
+                    Character.isHighSurrogate(str.charAt(offLocal + workingLen - 1))) {
+                workingLen--;
+            }
 
             str.getChars(offLocal, offLocal + workingLen, charsArray, charsArrayLength);
             charsArrayLength += workingLen;
